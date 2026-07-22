@@ -1,0 +1,204 @@
+<puzzle-view class="w-full">
+  <div class="flex gap-12">
+    <article class="mx-auto w-full min-w-0 max-w-5xl">
+      <header class="mb-8">
+        <h1 class="text-3xl font-semibold tracking-tight text-ink">Dialog</h1>
+        <p class="mt-2 text-body">
+          A modal dialog on the native dialog element — focus trapping, Escape and
+          backdrop dismiss, title and description ARIA wiring, and a footer slot. The
+          parent owns the open flag; the piece only asks to close.
+        </p>
+      </header>
+
+      <ExampleBox code={ codeHero }>
+        <Button variant="outline" @press={ openDialog }>Open dialog</Button>
+        <Dialog
+          open={ dialogOpen }
+          title="Delete project?"
+          description="This permanently removes the project and all of its data."
+          @close={ closeDialog }>
+          <p class="text-sm text-body">You cannot undo this action once the project is gone.</p>
+          <Button slot="footer" variant="ghost" @press={ closeDialog }>Cancel</Button>
+          <Button slot="footer" variant="destructive" @press={ confirmDialog }>Delete</Button>
+        </Dialog>
+      </ExampleBox>
+
+      <section id="installation" class="mt-12 scroll-mt-20">
+        <h2 class="mb-4 text-xl font-semibold tracking-tight text-ink">Installation</h2>
+        <p class="mb-3 text-sm text-body">
+          Copy the piece into your app — it compiles with your build and the code is yours:
+        </p>
+        <CodeBlock code={ installCmd }/>
+        <p class="mt-3 text-sm text-muted">
+          Requires the pieces.css tokens merged into your app styles (see Introduction). The
+          morph-engine install backs the optional morph prop.
+        </p>
+      </section>
+
+      <section id="usage" class="mt-12 scroll-mt-20">
+        <h2 class="mb-4 text-xl font-semibold tracking-tight text-ink">Usage</h2>
+        <CodeBlock code={ usageImport }/>
+        <CodeBlock code={ usageMarkup } class="mt-3"/>
+      </section>
+
+      <div class="mt-12 space-y-12">
+        <ExampleBox id="non-dismissible" title="Non-dismissible" code={ codeLocked }>
+          <Button variant="outline" @press={ openLocked }>Open locked dialog</Button>
+          <Dialog
+            open={ lockedOpen }
+            dismissible={ false }
+            title="Finishing up"
+            description="Escape and backdrop clicks do nothing here — the only way out is the button.">
+            <p class="text-sm text-body">Use this when a choice must be made before the dialog can close.</p>
+            <Button slot="footer" variant="primary" @press={ closeLocked }>Done</Button>
+          </Dialog>
+        </ExampleBox>
+
+        <ExampleBox id="footer" title="Footer slot" code={ codeFooter }>
+          <Button variant="outline" @press={ openFooter }>Open with footer</Button>
+          <Dialog
+            open={ footerOpen }
+            title="Rename file"
+            description="Buttons slotted into footer sit right-aligned at the bottom of the panel."
+            @close={ closeFooter }>
+            <p class="text-sm text-body">Any markup can go in the body; footer buttons call the parent's own handlers.</p>
+            <Button slot="footer" variant="ghost" @press={ closeFooter }>Cancel</Button>
+            <Button slot="footer" variant="primary" @press={ saveFooter }>Save</Button>
+          </Dialog>
+        </ExampleBox>
+
+        <ExampleBox id="morph" title="Morph from the trigger" code={ codeMorph }>
+          <div class="w-full max-w-sm">
+            <button
+              type="button"
+              id="dialog-morph-card"
+              class="block w-full cursor-pointer rounded-xl border border-border bg-surface p-5 text-left transition-colors hover:border-border-strong outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              @click={ openMorph }>
+              <p class="text-xs font-medium uppercase tracking-wide text-muted">Container transform</p>
+              <p class="mt-1.5 text-sm font-semibold text-ink">Release v0.1 is ready</p>
+              <p class="mt-1 text-sm text-muted">Click this card — it grows into the dialog.</p>
+            </button>
+            <Dialog
+              open={ morphOpen }
+              morph="#dialog-morph-card"
+              title="Release v0.1 is ready"
+              description="The card you clicked morphed into this modal, and it morphs back on close."
+              @close={ closeMorph }>
+              <p class="text-sm text-body">
+                Pass a CSS selector for the trigger via the morph prop; the panel flies out of it
+                on open and settles back into it on close. Escape or the backdrop both morph back.
+              </p>
+              <Button slot="footer" variant="ghost" @press={ closeMorph }>Close</Button>
+              <Button slot="footer" variant="primary" @press={ shipMorph }>Ship it</Button>
+            </Dialog>
+          </div>
+        </ExampleBox>
+      </div>
+    </article>
+
+    <Toc class="sticky top-24 hidden h-fit w-48 shrink-0 self-start xl:block" items={ toc }/>
+  </div>
+</puzzle-view>
+
+<scripts>
+import { PuzzleView } from '@magic-spells/puzzle';
+import Button from '@/components/ui/Button.pzl';
+import Dialog from '@/components/ui/Dialog.pzl';
+import ExampleBox from '@/components/docs/ExampleBox.pzl';
+import CodeBlock from '@/components/docs/CodeBlock.pzl';
+import Toc from '@/components/docs/Toc.pzl';
+import { toast } from '@/components/ui/toast.js';
+
+const installCmd = 'puzzle add piece dialog';
+const usageImport = `import Dialog from '@/components/ui/Dialog.pzl';`;
+const usageMarkup = `<Dialog open={ dialogOpen } title="Delete project?" description="This permanently removes the project and all of its data." @close={ closeDialog }></Dialog>`;
+
+const codeHero = `<Button variant="outline" @press={ openDialog }>Open dialog</Button>
+<Dialog
+  open={ dialogOpen }
+  title="Delete project?"
+  description="This permanently removes the project and all of its data."
+  @close={ closeDialog }>
+  <p>You cannot undo this action.</p>
+  <Button slot="footer" variant="ghost" @press={ closeDialog }>Cancel</Button>
+  <Button slot="footer" variant="destructive" @press={ confirmDialog }>Delete</Button>
+</Dialog>
+
+// parent owns the open flag; the dialog only asks to close
+events = {
+  openDialog: () => this.setData('dialogOpen', true),
+  closeDialog: () => this.setData('dialogOpen', false),
+  confirmDialog: () => this.setData('dialogOpen', false),
+};`;
+
+const codeLocked = `<Dialog
+  open={ lockedOpen }
+  dismissible={ false }
+  title="Finishing up"
+  description="Escape and backdrop clicks do nothing here.">
+  <Button slot="footer" variant="primary" @press={ closeLocked }>Done</Button>
+</Dialog>`;
+
+const codeFooter = `<Dialog open={ footerOpen } title="Rename file" @close={ closeFooter }>
+  <p>Any markup can go in the body.</p>
+  <Button slot="footer" variant="ghost" @press={ closeFooter }>Cancel</Button>
+  <Button slot="footer" variant="primary" @press={ saveFooter }>Save</Button>
+</Dialog>`;
+
+const codeMorph = `<!-- morph takes a CSS selector for the trigger element -->
+<button id="new-project-card" @click={ openIt }>…a card, a button, anything…</button>
+
+<Dialog open={ open } morph="#new-project-card"
+        title="Release v0.1 is ready" @close={ closeIt }>
+  …
+</Dialog>`;
+
+export default class DialogDoc extends PuzzleView {
+  created() {
+    this.setData({ dialogOpen: false, lockedOpen: false, footerOpen: false, morphOpen: false });
+  }
+
+  data(params, props) {
+    return {
+      ...this.getData(),
+      installCmd,
+      usageImport,
+      usageMarkup,
+      codeHero,
+      codeLocked,
+      codeFooter,
+      codeMorph,
+      toc: [
+        { label: 'Installation', href: '#installation' },
+        { label: 'Usage', href: '#usage' },
+        { label: 'Non-dismissible', href: '#non-dismissible' },
+        { label: 'Footer slot', href: '#footer' },
+        { label: 'Morph from the trigger', href: '#morph' },
+      ],
+    };
+  }
+
+  events = {
+    openDialog: () => this.setData('dialogOpen', true),
+    closeDialog: () => this.setData('dialogOpen', false),
+    confirmDialog: () => {
+      this.setData('dialogOpen', false);
+      toast({ message: 'Project deleted.', variant: 'danger' });
+    },
+    openLocked: () => this.setData('lockedOpen', true),
+    closeLocked: () => this.setData('lockedOpen', false),
+    openFooter: () => this.setData('footerOpen', true),
+    closeFooter: () => this.setData('footerOpen', false),
+    saveFooter: () => {
+      this.setData('footerOpen', false);
+      toast({ message: 'Saved.', variant: 'success' });
+    },
+    openMorph: () => this.setData('morphOpen', true),
+    closeMorph: () => this.setData('morphOpen', false),
+    shipMorph: () => {
+      this.setData('morphOpen', false);
+      toast({ message: 'Shipped.', variant: 'success' });
+    },
+  };
+}
+</scripts>

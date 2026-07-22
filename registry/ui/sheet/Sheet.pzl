@@ -1,0 +1,470 @@
+<puzzle-view>
+  <dialog
+    class={ panelClass }
+    aria-labelledby={ labelledby }
+    @cancel={ handleCancel(event) }
+    @click={ handleBackdropClick(event) }>
+
+    {#if mobile}
+      <div
+        class="flex-shrink-0 touch-none select-none {#if canDrag}cursor-grab{/if}"
+        @pointerdown={ dragStart(event, true) }
+        @pointermove={ dragMove }
+        @pointerup={ dragEnd }
+        @pointercancel={ dragEnd }>
+        {#if canDrag}
+          <div class="mx-auto my-3 h-1 w-10 rounded-full bg-faint" aria-hidden="true"></div>
+        {/if}
+        {#if title}
+          <h2 id={ titleId } class="px-4 pb-3 text-base font-semibold text-ink text-center">{ title }</h2>
+        {/if}
+      </div>
+    {:else}
+      {#if title}
+        <h2 id={ titleId } class="px-4 pt-5 pb-2 text-base font-semibold text-ink">{ title }</h2>
+      {/if}
+    {/if}
+
+    <div
+      class="overflow-y-auto overscroll-contain px-4 pb-4 max-h-[80vh]"
+      @pointerdown={ dragStart(event, false) }
+      @pointermove={ dragMove }
+      @pointerup={ dragEnd }
+      @pointercancel={ dragEnd }>
+      <Slot/>
+    </div>
+  </dialog>
+</puzzle-view>
+
+<scripts>
+import { PuzzleView } from '@magic-spells/puzzle';
+
+// Sheet — a bottom sheet with drag-to-dismiss, built on the native <dialog>
+// element (a behavioral port of @magic-spells/bottom-sheet, which layered touch
+// physics on top of @magic-spells/dialog-panel). Native showModal() gives us
+// focus trapping, page inerting, Escape-as-`cancel`, and the top-layer backdrop
+// for free; this component adds the drag gesture and the mobile/desktop split.
+//
+// CONTROLLED BY THE PARENT (same contract as Dialog). The parent owns `open`;
+// Sheet reconciles the native element to it in mounted()/afterUpdate() via
+// syncOpen(). Sheet never sets `open` itself — it only asks the parent to close
+// through the `close` callback, tagging every dismissal with a reason.
+//
+//   <Sheet open={ open } title="Filters"
+//          @close={ (reason) => setData('open', false) }>
+//     <FilterList/>
+//   </Sheet>
+//
+// @close(reason) fires for user-driven dismissal only — reason is
+// 'escape' (native cancel), 'backdrop' (click on the dialog/backdrop region), or
+// 'drag' (dragged past the dismiss threshold) — and only when `dismissible`
+// (default true). When dismissible is false all three are disabled and the drag
+// handle affordance is removed.
+//
+// MOBILE vs DESKTOP (the source's max-display-width, reinterpreted). At viewports
+// wider than `maxDisplayWidth` (px, default 640) the sheet renders as a centered
+// modal (rounded-xl, max-w-lg, m-auto) with no handle and no drag; escape/backdrop
+// still dismiss. A matchMedia listener (wired in mounted(), torn down in
+// destroyed()) drives the reactive `mobile` flag. Native <dialog>:modal is
+// position:fixed inset:0 with margin:auto; `m-0 mt-auto` turns that centering
+// into a bottom pin, `m-auto` keeps it centered for the modal form.
+//
+// PORTED DRAG STATE MACHINE (from bottom-sheet.js). Thresholds/physics are
+// identical: dismiss past #dragThreshold = 100px of downward travel; upward
+// drags get rubber-band resistance sqrt(|d|) * 10 * #overscrollResistance (0.1);
+// on release, dismiss (>threshold, downward) or spring back to rest (everything
+// else). Disambiguation mirrors the source: the header is always a drag surface;
+// the content region only starts a sheet-drag when it is scrolled to the top
+// (scrollTop === 0) AND the finger moves downward — otherwise it is a normal
+// content scroll and we bail, leaving the browser to handle it.
+//
+// POINTER, NOT TOUCH (modernization). The source used raw touch events with
+// { passive: false } + preventDefault to arbitrate scroll-vs-drag. This port uses
+// pointer events with setPointerCapture: the header (touch-action: none via
+// `touch-none`) is the rock-solid primary drag surface; content-drag captures
+// lazily only once a downward-at-top move is confirmed, so taps and clicks inside
+// the content still reach their targets and ordinary scrolling is untouched.
+//
+// IMPERATIVE TRANSFORM ESCAPE HATCH. During a live gesture the finger position is
+// applied straight to the <dialog> with `element.style.transform` — a native-API
+// imperative write confined to the drag, NEVER setData (a pointermove at 60fps
+// must not re-render). At gesture end the inline transform is cleared (or held at
+// translateY(100%) through the dismiss animation, then cleared in syncOpen on the
+// native close) so classes own the resting state again. No morph here, so the
+// morph-engine no-transform constraint does not apply — the transform is strictly
+// transient.
+const BACKDROP =
+  '[&::backdrop]:bg-black/50 [&::backdrop]:backdrop-blur-sm ' +
+  '[&::backdrop]:transition-opacity [&::backdrop]:duration-150 ' +
+  '[&[data-closing]::backdrop]:opacity-0';
+
+// Display is gated on open: — a bare `flex` on a <dialog> would override the
+// UA's `dialog:not([open]) { display: none }` and leave the closed sheet
+// visible in the page flow.
+const SHEET =
+  'm-0 mt-auto w-full max-w-full rounded-t-2xl border-t border-border bg-surface ' +
+  'p-0 open:flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)] ' +
+  'text-body will-change-transform';
+
+const MODAL =
+  'm-auto w-[calc(100%-2rem)] max-w-lg rounded-xl border border-border bg-surface ' +
+  'p-0 open:flex flex-col overflow-hidden shadow-xl text-body';
+
+let uid = 0;
+
+export default class Sheet extends PuzzleView {
+  // physics constants (ported verbatim from bottom-sheet.js)
+  #dragThreshold = 100;
+  #overscrollResistance = 0.1;
+
+  // transient gesture state — instance-local, never setData (would re-render mid-drag)
+  #drag = {
+    active: false,
+    pointerId: null,
+    startY: 0,
+    delta: 0,
+    direction: null,
+    isHeader: false,
+    isAtTop: false,
+    captured: false,
+    captureEl: null,
+  };
+
+  // matchMedia plumbing for the mobile/desktop split
+  #mql = null;
+  #mqlHandler = null;
+
+  // exit-animation state: the running out animation, and a flag set by the
+  // drag-dismiss path (which has already animated the slide) so syncOpen()
+  // closes immediately instead of animating a second time.
+  #exit = null;
+  #skipExit = false;
+
+  data(params, props) {
+    const id = (this._id ??= `pp-sheet-${++uid}`);
+    const mobile = this.#currentMobile(props);
+    const title = props.title || '';
+    // no drag / no handle affordance when not dismissible, and never on desktop
+    const canDrag = mobile && props.dismissible !== false;
+    return {
+      // `open` is read imperatively in syncOpen(), not by the template — returning
+      // it keeps the afterUpdate() cycle firing when the parent flips it.
+      open: !!props.open,
+      mobile,
+      title,
+      canDrag,
+      titleId: `${id}-title`,
+      labelledby: title ? `${id}-title` : false,
+      panelClass: this.#panelClass(mobile, props),
+    };
+  }
+
+  // ---- mobile/desktop resolution --------------------------------------------
+
+  #currentMobile(props = this.props) {
+    const max = Number(props.maxDisplayWidth) || 640;
+    if (typeof window === 'undefined' || !window.matchMedia) return true;
+    return window.matchMedia(`(max-width: ${max}px)`).matches;
+  }
+
+  #panelClass(mobile, props = this.props) {
+    return [BACKDROP, mobile ? SHEET : MODAL, props.class || ''].join(' ');
+  }
+
+  #setupMediaQuery() {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const max = Number(this.props.maxDisplayWidth) || 640;
+    this.#mql = window.matchMedia(`(max-width: ${max}px)`);
+    this.#mqlHandler = (event) => {
+      const mobile = event.matches;
+      // A crossing can strand an inline drag transform — clear it defensively.
+      if (this.element) this.element.style.transform = '';
+      this.setData({
+        mobile,
+        canDrag: mobile && this.props.dismissible !== false,
+        panelClass: this.#panelClass(mobile),
+      });
+    };
+    this.#mql.addEventListener('change', this.#mqlHandler);
+  }
+
+  // ---- open/close reconciliation (native <dialog>) --------------------------
+
+  // Idempotent: the dialog.open / animation guards make repeat afterUpdate()
+  // calls safe. Closing is asynchronous: the element holds open through an out
+  // animation (slide-down as a sheet, scale+fade as a modal) before the native
+  // close() runs — except after a drag dismiss, which already animated the
+  // slide and just needs the immediate close. The inline drag transform is
+  // cleared on every close path so the next open starts clean.
+  syncOpen() {
+    const dialog = this.element;
+    if (!dialog) return;
+    const shouldOpen = !!this.props.open;
+
+    if (shouldOpen) {
+      // Reopening mid-exit: cancel the out animation — the element never closed.
+      if (this.#exit) {
+        this.#exit.cancel();
+        this.#exit = null;
+        delete dialog.dataset.closing;
+        dialog.style.transform = '';
+      }
+      if (!dialog.open) {
+        dialog.showModal();
+        this.#playEnter(dialog);
+      }
+    } else if (dialog.open) {
+      if (this.#exit) return; // exit already playing
+      if (this.#skipExit || this.#reducedMotion()) {
+        this.#skipExit = false;
+        dialog.close();
+        dialog.style.transform = '';
+        return;
+      }
+      this.#playExit(dialog);
+    }
+  }
+
+  // Hold the element open through the out animation, then close. data-closing
+  // fades the ::backdrop via CSS (pseudo-elements are out of WAAPI's reach).
+  #playExit(dialog) {
+    dialog.dataset.closing = '';
+    const anim = this.getData().mobile
+      ? dialog.animate(
+          [{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }],
+          { duration: 220, easing: 'ease-in', fill: 'forwards' }
+        )
+      : dialog.animate(
+          [
+            { opacity: 1, transform: 'scale(1)' },
+            { opacity: 0, transform: 'scale(0.96)' },
+          ],
+          { duration: 150, easing: 'ease-in', fill: 'forwards' }
+        );
+    this.#exit = anim;
+    anim.onfinish = () => {
+      if (this.#exit !== anim) return; // superseded by a reopen
+      this.#exit = null;
+      dialog.close();
+      anim.cancel(); // drop the forwards fill now that the element is closed
+      delete dialog.dataset.closing;
+      dialog.style.transform = '';
+    };
+  }
+
+  #playEnter(dialog) {
+    if (this.#reducedMotion()) return;
+    if (this.getData().mobile) {
+      dialog.animate(
+        [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
+        { duration: 260, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      );
+    } else {
+      dialog.animate(
+        [
+          { opacity: 0, transform: 'scale(0.96)' },
+          { opacity: 1, transform: 'scale(1)' },
+        ],
+        { duration: 180, easing: 'ease-out' }
+      );
+    }
+  }
+
+  #reducedMotion() {
+    return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  mounted() {
+    this.#setupMediaQuery();
+    this.syncOpen();
+  }
+
+  afterUpdate() {
+    this.syncOpen();
+  }
+
+  destroyed() {
+    this.#mql?.removeEventListener('change', this.#mqlHandler);
+    this.#mql = null;
+    this.#mqlHandler = null;
+  }
+
+  // ---- drag gesture ---------------------------------------------------------
+
+  #capture(event) {
+    const d = this.#drag;
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch (_) {
+      /* capture is best-effort */
+    }
+    d.captured = true;
+    d.captureEl = event.currentTarget;
+  }
+
+  #resetDrag() {
+    const d = this.#drag;
+    d.active = false;
+    d.pointerId = null;
+    d.startY = 0;
+    d.delta = 0;
+    d.direction = null;
+    d.isHeader = false;
+    d.isAtTop = false;
+    d.captured = false;
+    d.captureEl = null;
+  }
+
+  #dismiss(delta) {
+    const dialog = this.element;
+    if (!dialog || this.#reducedMotion()) {
+      if (dialog) dialog.style.transform = '';
+      this.#finishClose('drag');
+      return;
+    }
+    const anim = dialog.animate(
+      [
+        { transform: `translate3d(0,${delta}px,0)` },
+        { transform: 'translate3d(0,100%,0)' },
+      ],
+      { duration: 200, easing: 'ease-in' }
+    );
+    // Hold the end state under the (fill:none) animation so nothing snaps back up
+    // when it clears; syncOpen() clears this on the native close.
+    dialog.style.transform = 'translate3d(0,100%,0)';
+    anim.finished.then(() => this.#finishClose('drag')).catch(() => this.#finishClose('drag'));
+  }
+
+  #finishClose(reason) {
+    const { close } = this.props;
+    // The drag path animated its own slide-out — tell syncOpen() to close
+    // immediately instead of playing the standard exit a second time.
+    this.#skipExit = true;
+    // Parent flips `open` false → afterUpdate → syncOpen() runs dialog.close()
+    // and clears the held inline transform.
+    if (typeof close === 'function') close(reason);
+  }
+
+  #springBack(delta) {
+    const dialog = this.element;
+    if (!dialog) return;
+    if (this.#reducedMotion()) {
+      dialog.style.transform = '';
+      return;
+    }
+    const from =
+      delta < 0
+        ? `translate3d(0,${-(Math.sqrt(Math.abs(delta)) * 10 * this.#overscrollResistance)}px,0)`
+        : `translate3d(0,${delta}px,0)`;
+    dialog.style.transform = ''; // rest state; the animation masks it during playback
+    dialog.animate(
+      [{ transform: from }, { transform: 'translate3d(0,0,0)' }],
+      { duration: 200, easing: 'ease-out' }
+    );
+  }
+
+  events = {
+    // Escape key arrives as the native `cancel` event. Always preventDefault so
+    // the browser can't close the element behind the vdom's back; then ask the
+    // parent to close if dismissible. Not dismissible → Escape is a no-op.
+    handleCancel: (event) => {
+      event.preventDefault();
+      if (this.props.dismissible === false) return;
+      const { close } = this.props;
+      if (typeof close === 'function') close('escape');
+    },
+
+    // The click lands on the <dialog> element itself only when it hit the
+    // backdrop region (inner content has a deeper target).
+    handleBackdropClick: (event) => {
+      if (event.target !== this.element) return;
+      if (this.props.dismissible === false) return;
+      const { close } = this.props;
+      if (typeof close === 'function') close('backdrop');
+    },
+
+    // pointerdown on the header (isHeader = true) or content (false). The header
+    // is always a drag surface and captures immediately; content only arms — it
+    // captures lazily in dragMove once a downward-at-top move is confirmed, so
+    // taps/clicks and normal scrolling inside the content are never hijacked.
+    dragStart: (event, isHeader) => {
+      if (!this.getData().mobile) return; // desktop modal: no drag
+      if (this.props.dismissible === false) return; // not dismissible: no drag
+      if (!event.isPrimary) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      const d = this.#drag;
+      d.active = true;
+      d.pointerId = event.pointerId;
+      d.startY = event.clientY;
+      d.delta = 0;
+      d.direction = null;
+      d.isHeader = isHeader;
+      d.isAtTop = isHeader ? true : event.currentTarget.scrollTop === 0;
+      d.captured = false;
+      d.captureEl = null;
+
+      if (isHeader) {
+        this.#capture(event);
+        if (event.cancelable) event.preventDefault();
+      }
+    },
+
+    dragMove: (event) => {
+      const d = this.#drag;
+      if (!d.active || event.pointerId !== d.pointerId) return;
+
+      d.delta = event.clientY - d.startY;
+      if (d.direction === null && d.delta !== 0) {
+        d.direction = d.delta < 0 ? 'up' : 'down';
+      }
+
+      // Content region: only the sheet-drags when at the top AND pulling down —
+      // otherwise bail and let the browser scroll the content normally.
+      if (!d.isHeader && (!d.isAtTop || d.direction === 'up')) {
+        d.active = false;
+        return;
+      }
+
+      if (!d.captured) this.#capture(event);
+      if (event.cancelable) event.preventDefault();
+
+      const dialog = this.element;
+      if (!dialog) return;
+      if (d.delta < 0) {
+        // upward overscroll: rubber-band resistance (ported formula)
+        const resisted = Math.sqrt(Math.abs(d.delta)) * 10 * this.#overscrollResistance;
+        dialog.style.transform = `translate3d(0,${-resisted}px,0)`;
+      } else {
+        dialog.style.transform = `translate3d(0,${d.delta}px,0)`;
+      }
+    },
+
+    dragEnd: (event) => {
+      const d = this.#drag;
+      if (d.pointerId === null || event.pointerId !== d.pointerId) {
+        this.#resetDrag();
+        return;
+      }
+      const captured = d.captured;
+      const delta = d.delta;
+      if (d.captureEl) {
+        try {
+          d.captureEl.releasePointerCapture(d.pointerId);
+        } catch (_) {
+          /* release is best-effort */
+        }
+      }
+      this.#resetDrag();
+
+      if (!captured) return; // never dragged the sheet → nothing to animate
+
+      if (delta > this.#dragThreshold) {
+        this.#dismiss(delta); // past threshold, downward → dismiss('drag')
+      } else {
+        this.#springBack(delta); // short / upward drag → snap back to rest
+      }
+    },
+  };
+}
+</scripts>

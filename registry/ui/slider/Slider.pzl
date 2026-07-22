@@ -1,0 +1,639 @@
+<puzzle-view>
+  <div
+    class={ rootClass }
+    id={ rootId }
+    @pointerdown={ onPointerDown(event) }
+    @keydown={ onKeyDown(event) }
+    @click={ onClick(event) }>
+
+    <div class="relative h-1.5 w-full rounded-full bg-faint" data-slider-track>
+      <div class={ fillClass } style={ fillStyle }></div>
+
+      {#if range}
+        <div
+          class={ thumbClass }
+          style={ thumbMinStyle }
+          data-thumb="min"
+          role="slider"
+          tabindex={ thumbTabindex }
+          aria-orientation="horizontal"
+          aria-label={ labelMin }
+          aria-valuemin={ minStr }
+          aria-valuemax={ valueMaxStr }
+          aria-valuenow={ valueMinStr }
+          aria-disabled={ ariaDisabled }></div>
+        <div
+          class={ thumbClass }
+          style={ thumbMaxStyle }
+          data-thumb="max"
+          role="slider"
+          tabindex={ thumbTabindex }
+          aria-orientation="horizontal"
+          aria-label={ labelMax }
+          aria-valuemin={ valueMinStr }
+          aria-valuemax={ maxStr }
+          aria-valuenow={ valueMaxStr }
+          aria-disabled={ ariaDisabled }></div>
+      {:else}
+        <div
+          class={ thumbClass }
+          style={ thumbSingleStyle }
+          data-thumb="single"
+          role="slider"
+          tabindex={ thumbTabindex }
+          aria-orientation="horizontal"
+          aria-label={ label }
+          aria-valuemin={ minStr }
+          aria-valuemax={ maxStr }
+          aria-valuenow={ valueStr }
+          aria-disabled={ ariaDisabled }></div>
+      {/if}
+    </div>
+
+    {#if name}
+      {#if range}
+        <input type="hidden" name={ nameMin } value={ valueMinStr } />
+        <input type="hidden" name={ nameMax } value={ valueMaxStr } />
+      {:else}
+        <input type="hidden" name={ name } value={ valueStr } />
+      {/if}
+    {/if}
+  </div>
+</puzzle-view>
+
+<scripts>
+import { PuzzleView } from '@magic-spells/puzzle';
+
+// Slider — a touch-friendly single-value or dual-thumb range slider, ported
+// from the @magic-spells/range-slider web component. A CONTROLLED component:
+// the parent owns the committed value(s) and passes them as props; the slider
+// keeps only its live drag position internally (setData draft) and reports
+// changes through value-first callbacks.
+//
+//   single:  <Slider value={ vol } min={ 0 } max={ 100 } @change={ setVol } />
+//   range:   <Slider valueMin={ lo } valueMax={ hi }
+//                    @input={ preview } @change={ commit } />
+//
+// The PRESENCE of valueMin / valueMax switches to dual-thumb range mode — the
+// same convention as the source (which keyed off the value-min / value-max
+// attributes). In single mode pass `value`; in range mode pass both.
+//
+// Props
+//   value                 number  — single-mode committed value
+//   valueMin / valueMax   number  — range-mode committed values (presence = range mode)
+//   min (0) / max (100)   number  — bounds
+//   step (1)              number | 'any'  — quantize detent; 'any' = continuous
+//   disabled              boolean — blocks pointer + keyboard interaction
+//   label                 string  — single thumb aria-label (default 'Value')
+//   labelMin / labelMax   string  — range thumb aria-labels (defaults 'Minimum'/'Maximum value')
+//   name                  string  — emits hidden input(s) for form posts:
+//                                   {name} single, {name}-min + {name}-max range
+//   class                 string  — extra utilities merged onto the root
+//
+// Callbacks (value-first)
+//   @input   — live during drag / on each key step (single: (value); range: ({valueMin,valueMax}, thumb))
+//   @change  — commit on pointer release, track tap, and each key (native <input type=range> parity)
+//
+// Gesture model (carried over from the source — the point of the port):
+//   1. GESTURE ARMING — a press on a THUMB starts dragging immediately; a press
+//      on the TRACK only ARMS: >3px of horizontal movement promotes it to a drag
+//      on the nearest thumb (which jumps under the pointer), while vertical-first
+//      movement disarms so the page scrolls. Equal-value (stacked) range thumbs
+//      defer the thumb choice to the first move's direction.
+//   2. TOUCH CAPTURE AVOIDANCE — setPointerCapture is called for mouse/pen ONLY;
+//      touch rides implicit capture (explicit capture mid-touch fires a spurious
+//      pointercancel on some mobile engines). touch-action:pan-y (touch-pan-y) on
+//      the root makes the initial axis decision; a window touchmove listener
+//      preventDefaults once a drag is live to axis-lock against vertical creep.
+//   3. NORMALIZE IDEMPOTENCY — every value is quantized to step, clamped to
+//      [min,max], crossover-clamped against the opposing thumb, then rounded;
+//      update loops are guarded by value EQUALITY, not flags.
+//   4. TAP-VS-DRAG TRANSITIONS — a `dragging` flag swaps the thumb/fill to
+//      transition-none so drags track the pointer raw, while a track TAP (armed,
+//      no move) and keyboard steps animate the thumb across (transitions on).
+//
+// Ported from @magic-spells/range-slider; DELIBERATELY DROPPED (Puzzle handles
+// them at the parent, or they're deferred):
+//   - data-content-* bound number-inputs and live value bubbles (Puzzle
+//     reactivity makes value display a parent concern — read @input/@change)
+//   - tick marks, tick-step, and show-labels (deferred; add `ticks` later)
+//   - form-reset default restoration (parent-owned state resets naturally)
+//   - RTL layout
+
+const DRAG_THRESHOLD = 3;
+
+// --- pure value math (all take a cfg: { min, max, step, dec }) ---------------
+
+function decimalsOf(raw) {
+  if (raw == null) return 0;
+  const s = String(raw);
+  const dot = s.indexOf('.');
+  return dot === -1 ? 0 : Math.min(s.length - dot - 1, 6);
+}
+
+function quantize(v, cfg) {
+  if (cfg.step === 'any') return v;
+  return cfg.min + Math.round((v - cfg.min) / cfg.step) * cfg.step;
+}
+
+function clampBounds(v, cfg) {
+  return Math.max(cfg.min, Math.min(v, cfg.max));
+}
+
+function round(v, cfg) {
+  return parseFloat(v.toFixed(cfg.dec));
+}
+
+// Quantize → clamp to bounds → crossover-clamp against the opposing thumb →
+// round. Deterministic: normalize(normalize(x)) === normalize(x).
+function normalize(value, thumb, cfg, committed) {
+  let v = Number.isFinite(value) ? value : cfg.min;
+  v = clampBounds(quantize(v, cfg), cfg);
+  if (thumb === 'min') v = Math.min(v, committed.valueMax);
+  if (thumb === 'max') v = Math.max(v, committed.valueMin);
+  return round(v, cfg);
+}
+
+function valueToPercent(value, cfg) {
+  const range = cfg.max - cfg.min;
+  if (range <= 0) return 0;
+  const pct = ((value - cfg.min) / range) * 100;
+  return Math.round(Math.max(0, Math.min(100, pct)) * 1000) / 1000;
+}
+
+const ROOT_BASE = 'relative flex w-full min-h-11 touch-pan-y select-none items-center';
+const THUMB_BASE =
+  'absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full ' +
+  'border border-border-strong bg-surface shadow ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring';
+
+export default class Slider extends PuzzleView {
+  created() {
+    this._resetDrag();
+    this._suppressClick = false;
+    this._overlayTimer = null;
+    this._listening = false;
+    this._onWinMove = (e) => this._pointerMove(e);
+    this._onWinEnd = (e) => this._pointerEnd(e);
+    this._onTouchMove = (e) => {
+      // axis-lock: once a drag is live, stop the page creeping vertically —
+      // touch-action:pan-y only made the INITIAL decision.
+      if (this._drag.dragging && e.cancelable) e.preventDefault();
+    };
+    // Local draft (drives rendering while dragging / settling). draftThumb null
+    // means "render the committed value straight from props".
+    this.setData({ dragging: false, draftThumb: null, draftValue: null });
+  }
+
+  destroyed() {
+    this._removeWindowListeners();
+    if (this._overlayTimer) clearTimeout(this._overlayTimer);
+  }
+
+  data(params, props) {
+    const cfg = this._cfg(props);
+    const range = this._isRange(props);
+    const committed = this._committed(props, cfg);
+    const d = this.getData();
+    const dragging = !!d.dragging;
+
+    // Overlay the internal draft over the committed value(s): while dragging (or
+    // during the brief settle window before props catch up) the active thumb
+    // renders from the draft, the other from props.
+    const renderValue = d.draftThumb === 'single' ? d.draftValue : committed.value;
+    const renderMin = d.draftThumb === 'min' ? d.draftValue : committed.valueMin;
+    const renderMax = d.draftThumb === 'max' ? d.draftValue : committed.valueMax;
+
+    const trans = dragging ? 'transition-none' : 'transition-[left,width] duration-150 ease-out';
+    const thumbTrans = dragging ? 'transition-none' : 'transition-[left] duration-150 ease-out';
+    const disabled = !!props.disabled;
+
+    let fillStyle = '';
+    let thumbSingleStyle = '';
+    let thumbMinStyle = '';
+    let thumbMaxStyle = '';
+    if (range) {
+      const pMin = valueToPercent(renderMin, cfg);
+      const pMax = valueToPercent(renderMax, cfg);
+      fillStyle = `left:${pMin}%;width:${Math.max(0, pMax - pMin)}%`;
+      thumbMinStyle = `left:${pMin}%`;
+      thumbMaxStyle = `left:${pMax}%`;
+    } else {
+      const p = valueToPercent(renderValue, cfg);
+      fillStyle = `left:0%;width:${p}%`;
+      thumbSingleStyle = `left:${p}%`;
+    }
+
+    return {
+      range,
+      rootId: props.id || false,
+      rootClass: [
+        ROOT_BASE,
+        disabled ? 'opacity-50 cursor-not-allowed' : '',
+        props.class || '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+      fillClass: `absolute inset-y-0 rounded-full bg-brand ${trans}`,
+      thumbClass: `${THUMB_BASE} ${thumbTrans} ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`,
+      fillStyle,
+      thumbSingleStyle,
+      thumbMinStyle,
+      thumbMaxStyle,
+      thumbTabindex: disabled ? '-1' : '0',
+      ariaDisabled: disabled ? 'true' : false,
+      label: props.label || 'Value',
+      labelMin: props.labelMin || 'Minimum value',
+      labelMax: props.labelMax || 'Maximum value',
+      minStr: String(cfg.min),
+      maxStr: String(cfg.max),
+      valueStr: String(renderValue),
+      valueMinStr: String(renderMin),
+      valueMaxStr: String(renderMax),
+      name: props.name || false,
+      nameMin: props.name ? `${props.name}-min` : false,
+      nameMax: props.name ? `${props.name}-max` : false,
+    };
+  }
+
+  // Once props reflect the committed draft, drop the overlay silently (no visual
+  // change). Deferred out of the render stack to avoid afterUpdate re-entrancy.
+  afterUpdate() {
+    const d = this.getData();
+    if (this._pendingClearCheck || d.dragging || d.draftThumb == null) return;
+    const cfg = this._cfg(this.props);
+    const committed = this._committed(this.props, cfg);
+    if (this._channel(committed, d.draftThumb) !== d.draftValue) return;
+    this._pendingClearCheck = true;
+    queueMicrotask(() => {
+      this._pendingClearCheck = false;
+      const now = this.getData();
+      if (now.draftThumb != null && !now.dragging) {
+        this.setData({ draftThumb: null, draftValue: null });
+        this.refresh();
+      }
+    });
+  }
+
+  // --- config / committed-state derivation -----------------------------------
+
+  _isRange(props) {
+    return props.valueMin !== undefined || props.valueMax !== undefined;
+  }
+
+  _cfg(props) {
+    const min = Number.isFinite(Number(props.min)) ? Number(props.min) : 0;
+    const max = Number.isFinite(Number(props.max)) ? Number(props.max) : 100;
+    const stepAny = props.step === 'any';
+    const stepNum = Number(props.step);
+    const step = stepAny ? 'any' : Number.isFinite(stepNum) && stepNum > 0 ? stepNum : 1;
+    const dec = stepAny ? 2 : Math.max(decimalsOf(props.step), decimalsOf(props.min));
+    return { min, max, step, dec };
+  }
+
+  // The committed value(s) straight from props, normalized. Range values are
+  // each clamped to bounds first, then the pair is de-crossed (min<=max).
+  _committed(props, cfg) {
+    if (this._isRange(props)) {
+      const rawMin = Number(props.valueMin);
+      const rawMax = Number(props.valueMax);
+      let valueMin = round(clampBounds(quantize(Number.isFinite(rawMin) ? rawMin : cfg.min, cfg), cfg), cfg);
+      let valueMax = round(clampBounds(quantize(Number.isFinite(rawMax) ? rawMax : cfg.max, cfg), cfg), cfg);
+      if (valueMin > valueMax) valueMin = valueMax;
+      return { valueMin, valueMax };
+    }
+    const raw = Number(props.value);
+    return { value: round(clampBounds(quantize(Number.isFinite(raw) ? raw : cfg.min, cfg), cfg), cfg) };
+  }
+
+  _channel(state, thumb) {
+    return thumb === 'min' ? state.valueMin : thumb === 'max' ? state.valueMax : state.value;
+  }
+
+  // --- geometry --------------------------------------------------------------
+
+  _percentFromClientX(clientX) {
+    const track = this.element && this.element.querySelector('[data-slider-track]');
+    if (!track) return 0;
+    const rect = track.getBoundingClientRect();
+    if (!rect.width) return 0;
+    return Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+  }
+
+  _percentToValue(percent, cfg) {
+    return cfg.min + (percent / 100) * (cfg.max - cfg.min);
+  }
+
+  _nearestThumb(percent, committed, cfg) {
+    if (!this._isRange(this.props)) return 'single';
+    const pMin = valueToPercent(committed.valueMin, cfg);
+    const pMax = valueToPercent(committed.valueMax, cfg);
+    const dMin = Math.abs(percent - pMin);
+    const dMax = Math.abs(percent - pMax);
+    if (dMin === dMax) return percent < pMin ? 'min' : 'max';
+    return dMin < dMax ? 'min' : 'max';
+  }
+
+  // --- gesture bookkeeping (transient — never setData, must not re-render) ----
+
+  _resetDrag() {
+    this._drag = {
+      pointerId: null,
+      thumb: null,
+      deferred: false,
+      armed: false,
+      dragging: false,
+      startX: 0,
+      startY: 0,
+      startValue: 0,
+    };
+  }
+
+  _teardownGesture() {
+    this._resetDrag();
+    this._removeWindowListeners();
+  }
+
+  _addWindowListeners() {
+    if (this._listening || typeof window === 'undefined') return;
+    this._listening = true;
+    window.addEventListener('pointermove', this._onWinMove);
+    window.addEventListener('pointerup', this._onWinEnd);
+    window.addEventListener('pointercancel', this._onWinEnd);
+    window.addEventListener('lostpointercapture', this._onWinEnd);
+    window.addEventListener('touchmove', this._onTouchMove, { passive: false });
+  }
+
+  _removeWindowListeners() {
+    if (!this._listening || typeof window === 'undefined') return;
+    this._listening = false;
+    window.removeEventListener('pointermove', this._onWinMove);
+    window.removeEventListener('pointerup', this._onWinEnd);
+    window.removeEventListener('pointercancel', this._onWinEnd);
+    window.removeEventListener('lostpointercapture', this._onWinEnd);
+    window.removeEventListener('touchmove', this._onTouchMove, { passive: false });
+  }
+
+  _capturePointer(event) {
+    // Mouse/pen only — see gesture note 2 (touch capture avoidance).
+    if (event.pointerType === 'touch') return;
+    try {
+      this.element.setPointerCapture(event.pointerId);
+    } catch (_) {
+      /* best effort */
+    }
+  }
+
+  _releasePointer(event) {
+    try {
+      if (this.element && this.element.hasPointerCapture && this.element.hasPointerCapture(event.pointerId)) {
+        this.element.releasePointerCapture(event.pointerId);
+      }
+    } catch (_) {
+      /* best effort */
+    }
+  }
+
+  _emit(type, cfg, thumb, value, committed) {
+    const fn = this.props[type];
+    if (typeof fn !== 'function') return;
+    if (this._isRange(this.props)) {
+      fn(
+        {
+          valueMin: thumb === 'min' ? value : committed.valueMin,
+          valueMax: thumb === 'max' ? value : committed.valueMax,
+        },
+        thumb
+      );
+    } else {
+      fn(value);
+    }
+  }
+
+  // Keep the draft overlaid until props reflect the commit (afterUpdate drops it
+  // when they match); this fallback reverts to the committed value if the parent
+  // never applies the change (uncontrolled usage).
+  _scheduleOverlayClear() {
+    if (this._overlayTimer) clearTimeout(this._overlayTimer);
+    this._overlayTimer = setTimeout(() => {
+      this._overlayTimer = null;
+      const d = this.getData();
+      if (d.draftThumb != null && !d.dragging) {
+        this.setData({ draftThumb: null, draftValue: null });
+        this.refresh();
+      }
+    }, 90);
+  }
+
+  // --- pointer flow (move/end run off window listeners during a gesture) ------
+
+  _pointerMove(event) {
+    const drag = this._drag;
+    if (drag.pointerId !== event.pointerId) return;
+
+    // mouse/pen released where we couldn't hear the up
+    if (event.pointerType !== 'touch' && event.buttons === 0) {
+      this._pointerEnd(event);
+      return;
+    }
+
+    const cfg = this._cfg(this.props);
+    const committed = this._committed(this.props, cfg);
+
+    if (!drag.dragging) {
+      const deltaX = Math.abs(event.clientX - drag.startX);
+      const deltaY = Math.abs(event.clientY - drag.startY);
+      if (deltaY > deltaX) {
+        // vertical intent → hand the gesture back to the browser for scrolling
+        this._teardownGesture();
+        return;
+      }
+      if (deltaX <= DRAG_THRESHOLD) return;
+      // promote: the nearest thumb jumps under the pointer
+      drag.thumb = this._nearestThumb(this._percentFromClientX(event.clientX), committed, cfg);
+      drag.startValue = this._channel(committed, drag.thumb);
+      drag.dragging = true;
+      this._suppressClick = true;
+      this._capturePointer(event);
+    }
+
+    if (drag.deferred) {
+      if (event.clientX === drag.startX) return;
+      drag.thumb = event.clientX < drag.startX ? 'min' : 'max';
+      drag.deferred = false;
+      const el = this.element && this.element.querySelector(`[data-thumb="${drag.thumb}"]`);
+      if (el) el.focus({ preventScroll: true });
+    }
+
+    if (Math.abs(event.clientX - drag.startX) > DRAG_THRESHOLD) this._suppressClick = true;
+
+    const raw = this._percentToValue(this._percentFromClientX(event.clientX), cfg);
+    const nv = normalize(raw, drag.thumb, cfg, committed);
+    const d = this.getData();
+    if (d.draftThumb !== drag.thumb || d.draftValue !== nv || !d.dragging) {
+      this.setData({ dragging: true, draftThumb: drag.thumb, draftValue: nv });
+      this.refresh();
+      this._emit('input', cfg, drag.thumb, nv, committed);
+    }
+  }
+
+  _pointerEnd(event) {
+    const drag = this._drag;
+    if (drag.pointerId !== event.pointerId) return;
+    this._releasePointer(event);
+
+    const { armed, dragging, thumb, startValue } = drag;
+    const cfg = this._cfg(this.props);
+    const committed = this._committed(this.props, cfg);
+    this._teardownGesture();
+
+    if (dragging && thumb) {
+      const finalValue = this.getData().draftValue;
+      // dragging → false re-enables transitions; the overlay stays until props
+      // catch up (afterUpdate) or the fallback timer reverts it.
+      this.setData({ dragging: false });
+      this.refresh();
+      if (finalValue !== startValue) {
+        this._emit('change', cfg, thumb, finalValue, committed);
+      }
+      this._scheduleOverlayClear();
+    } else if (armed && event.type === 'pointerup') {
+      // track TAP (armed, never moved): nearest thumb animates over (transitions
+      // are on because dragging is false).
+      const percent = this._percentFromClientX(event.clientX);
+      const tapThumb = this._nearestThumb(percent, committed, cfg);
+      this._suppressClick = true;
+      const nv = normalize(this._percentToValue(percent, cfg), tapThumb, cfg, committed);
+      if (nv !== this._channel(committed, tapThumb)) {
+        this.setData({ dragging: false, draftThumb: tapThumb, draftValue: nv });
+        this.refresh();
+        this._emit('input', cfg, tapThumb, nv, committed);
+        this._emit('change', cfg, tapThumb, nv, committed);
+        this._scheduleOverlayClear();
+      }
+      const el = this.element && this.element.querySelector(`[data-thumb="${tapThumb}"]`);
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+
+  events = {
+    onPointerDown: (event) => {
+      this._suppressClick = false;
+      if (this.props.disabled) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      // self-heal a stale armed gesture, but never hijack a live drag
+      if (this._drag.pointerId !== null) {
+        if (this._drag.dragging) return;
+        this._teardownGesture();
+      }
+      if (this._overlayTimer) {
+        clearTimeout(this._overlayTimer);
+        this._overlayTimer = null;
+      }
+
+      const cfg = this._cfg(this.props);
+      const committed = this._committed(this.props, cfg);
+      const range = this._isRange(this.props);
+      const thumbEl = event.target.closest && event.target.closest('[data-thumb]');
+
+      if (thumbEl) {
+        // a thumb press is unambiguous — drag starts immediately
+        event.preventDefault();
+        const thumb = thumbEl.dataset.thumb;
+        // stacked equal-value range thumbs sit atop each other — defer which one
+        // to grab until the first move reveals a direction
+        const stacked = range && committed.valueMin === committed.valueMax;
+        const startValue = this._channel(committed, thumb);
+        this._drag = {
+          pointerId: event.pointerId,
+          thumb,
+          deferred: stacked,
+          armed: true,
+          dragging: true,
+          startX: event.clientX,
+          startY: event.clientY,
+          startValue,
+        };
+        this.setData({ dragging: true, draftThumb: thumb, draftValue: startValue });
+        this.refresh();
+        if (thumbEl.focus) thumbEl.focus({ preventScroll: true });
+        this._capturePointer(event);
+        this._addWindowListeners();
+      } else if (
+        event.target === this.element ||
+        (event.target.closest && event.target.closest('[data-slider-track]'))
+      ) {
+        // a track press only ARMS — it may still become a page scroll
+        this._drag = {
+          pointerId: event.pointerId,
+          thumb: null,
+          deferred: false,
+          armed: true,
+          dragging: false,
+          startX: event.clientX,
+          startY: event.clientY,
+          startValue: 0,
+        };
+        this._addWindowListeners();
+      }
+    },
+
+    onKeyDown: (event) => {
+      if (this.props.disabled) return;
+      const thumbEl = event.target.closest && event.target.closest('[data-thumb]');
+      if (!thumbEl) return;
+      const thumb = thumbEl.dataset.thumb;
+      const cfg = this._cfg(this.props);
+      const committed = this._committed(this.props, cfg);
+      const current = this._channel(committed, thumb);
+      const stepSize = cfg.step === 'any' ? (cfg.max - cfg.min) / 100 : cfg.step;
+      const pageSize = stepSize * 10;
+
+      let next = null;
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowUp':
+          next = current + stepSize;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          next = current - stepSize;
+          break;
+        case 'PageUp':
+          next = current + pageSize;
+          break;
+        case 'PageDown':
+          next = current - pageSize;
+          break;
+        case 'Home':
+          next = cfg.min;
+          break;
+        case 'End':
+          next = cfg.max;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      const nv = normalize(next, thumb, cfg, committed);
+      if (nv === current) return;
+      // Keys are commits (native <input type=range> parity): fire @input AND
+      // @change. Overlay optimistically so the thumb animates even before props
+      // land (transitions on because dragging is false).
+      this.setData({ dragging: false, draftThumb: thumb, draftValue: nv });
+      this.refresh();
+      this._emit('input', cfg, thumb, nv, committed);
+      this._emit('change', cfg, thumb, nv, committed);
+      this._scheduleOverlayClear();
+    },
+
+    onClick: (event) => {
+      // swallow the click that trails a real drag or a track tap
+      if (!this._suppressClick) return;
+      this._suppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+  };
+}
+</scripts>

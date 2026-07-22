@@ -1,0 +1,12 @@
+{
+  "name": "dialog",
+  "description": "Modal dialog on the native <dialog> element — focus trapping, escape/backdrop dismiss, title/description ARIA wiring, footer slot",
+  "files": [
+    "Dialog.pzl"
+  ],
+  "registryDependencies": [],
+  "dependencies": [
+    "@magic-spells/morph-engine"
+  ],
+  "targetDir": "app/components/ui"
+}

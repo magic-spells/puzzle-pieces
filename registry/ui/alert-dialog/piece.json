@@ -1,0 +1,8 @@
+{
+  "name": "alert-dialog",
+  "description": "Confirm/cancel modal for destructive or consequential actions on the native <dialog role=\"alertdialog\"> element — no backdrop dismiss, no close X, Escape cancels, initial focus on Cancel",
+  "files": ["AlertDialog.pzl"],
+  "registryDependencies": [],
+  "dependencies": [],
+  "targetDir": "app/components/ui"
+}

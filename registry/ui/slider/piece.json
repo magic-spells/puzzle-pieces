@@ -1,0 +1,8 @@
+{
+  "name": "slider",
+  "description": "Touch-friendly single-value or dual-thumb range slider with gesture arming, keyboard support, and optional form inputs",
+  "files": ["Slider.pzl"],
+  "registryDependencies": [],
+  "dependencies": [],
+  "targetDir": "app/components/ui"
+}

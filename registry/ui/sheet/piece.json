@@ -1,0 +1,8 @@
+{
+  "name": "sheet",
+  "description": "Bottom sheet with drag-to-dismiss physics; becomes a centered modal on wide viewports",
+  "files": ["Sheet.pzl"],
+  "registryDependencies": [],
+  "dependencies": [],
+  "targetDir": "app/components/ui"
+}
