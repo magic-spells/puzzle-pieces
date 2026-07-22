@@ -10,6 +10,10 @@ const app = new PuzzleApp({
 	// Route definitions
 	routes,
 
+	// Hash-based routing so the static bundle deep-links correctly from any
+	// host without server rewrites (GitHub Pages serves only real files).
+	routerMode: 'hash',
+
 	// Global formatters available in every template
 	// (display transformation only — logic belongs in data())
 	formatters: {

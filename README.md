@@ -4,6 +4,9 @@ Beautifully-behaved UI components for the [Puzzle framework](https://github.com/
 Tailwind-styled, accessible, morph-aware — and **copied into your app, not installed
 from npm**.
 
+**[▶ Browse the component library](https://magic-spells.github.io/puzzle-pieces/)** —
+live docs and examples for every piece.
+
 ## Why copy-in?
 
 Puzzle compiles `.pzl` single-file components, and `.pzl` files can't live in
@@ -36,7 +39,8 @@ source with a `piece.json` manifest describing its files and dependencies.
 overlays (Dialog, Sheet, Popover, DropdownMenu, Command), data display (DataTable,
 Timeline, Tree, StatCard), charts (LineChart, BarChart, AreaChart, PieChart,
 Sparkline), and app-scale composites (Kanban, Sidebar, ChatScroller, Stepper).
-Browse them all in [`registry/ui/`](./registry/ui/), or run the demo/docs app:
+Browse them all in the [live component library](https://magic-spells.github.io/puzzle-pieces/),
+in [`registry/ui/`](./registry/ui/), or by running the docs app locally:
 
 ```sh
 cd demo && npm install && npm run dev   # http://localhost:3070

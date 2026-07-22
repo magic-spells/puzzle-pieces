@@ -1,6 +1,6 @@
 ---
 name: v0.1.0 — first publish (public registry + add CLI)
-status: in-progress
+status: shipped
 connections:
   - DOC-REGISTRY
   - FEATURE-ADD-CLI
@@ -19,10 +19,10 @@ Theme: make the finished registry something an external Puzzle app can actually 
 - **MIT license** chosen and committed (`LICENSE`, Magic Spells, 2026).
 - Pre-public sweep (2026-07-21): internal planning log `PLAN.md` deleted (rationale absorbed into these cards + CLAUDE.md), README rewritten around `puzzle add piece` with the true piece count, demo README de-scaffolded, competitor-library analogies removed from decision cards.
 
-## Remaining
+- **SHIPPED 2026-07-22.** Repo public + tagged `v0.1.0` (history NOT squashed — the pre-sweep `PLAN.md` remains visible in the initial commit; accepted). `@magic-spells/puzzle@0.1.1` and all four platform binary packages published to npm; demo de-localized (registry-resolved dep, plain `puzzle dev`/`puzzle build` scripts). Verified end-to-end as an external user: clean `npm install` + demo build via the npm wrapper binary; fresh `puzzle init` app + `puzzle add piece date-picker` against the default public registry URL (transitive calendar + `lib/date-math.js` + tokens copy) + morph-engine install + clean build.
 
-- Flip the GitHub repo public (after amending/squashing history so pre-sweep internals never appear in public history — the repo was already reduced to a single initial commit for this reason).
-- **BLOCKER (in the puzzle repo, not here): the four platform binary packages are unpublished.** `@magic-spells/puzzle@0.1.0` is on npm and the demo is de-localized (registry-resolved dep, plain `puzzle dev`/`puzzle build` scripts, lockfile regenerated), but its optionalDependencies `@magic-spells/puzzle-{darwin-arm64,darwin-x64,linux-x64,linux-arm64}` 404 — they exist built-but-unpublished in `../puzzle/npm/`. Until they publish, `npm install && npm run build` yields "no prebuilt CLI binary available" for every external user (verified 2026-07-21; demo itself compiles clean with a globally installed puzzle 0.1.0).
+## Post-release follow-ups
+
 - **Public docs home undecided** — the demo docs site vs the future Astro pages on `../magic-spells-site` ([[DECISION-DOCS-DEMO-SPLIT]]).
 - Docs for the CLI flow + the `diff`/`update` command ([[FEATURE-ADD-CLI]] follow-ups).
 

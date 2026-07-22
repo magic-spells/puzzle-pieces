@@ -14,10 +14,12 @@
       } catch (e) {}
     })();
   </script>
-  <link href="/styles.css" rel="stylesheet">
+  <!-- Relative asset paths so the single-page bundle works both at a domain
+       root and under a sub-path (e.g. GitHub Pages project sites). -->
+  <link href="./styles.css" rel="stylesheet">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
