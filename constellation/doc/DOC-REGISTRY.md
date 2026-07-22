@@ -35,7 +35,7 @@ The manifest schema and per-field meaning live in CLAUDE.md; the load-bearing ru
 
 ## registry.json is generated
 
-`registry.json` is not hand-maintained per entry — it is the aggregation of all `piece.json` manifests, pieces alphabetical, with a top-level `theme` pointer and `version`. **Regenerate it whenever a piece is added or renamed** (re-run the aggregation; lib files are represented via their consumers' `registryDependencies`, e.g. `lib/date-math.js`). Current count: **41 pieces** (README still says 40 — stale, tracked in [[RELEASE-V0-1-0]]).
+`registry.json` is not hand-maintained per entry — it is the aggregation of all `piece.json` manifests, pieces alphabetical, with a top-level `theme` pointer and `version`. **Regenerate it whenever a piece is added or renamed** (re-run the aggregation; lib files are represented via their consumers' `registryDependencies`, e.g. `lib/date-math.js`). Current count: **85 pieces** — keep the README and the demo shell (`Introduction.pzl`, `ComponentsIndex.pzl`) count in sync when it changes.
 
 ## theme/pieces.css is the token source
 

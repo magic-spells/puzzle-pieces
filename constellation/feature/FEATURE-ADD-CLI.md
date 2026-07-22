@@ -1,6 +1,6 @@
 ---
 name: The add CLI — resolver + copier
-status: planned
+status: built
 connections:
   - DOC-REGISTRY
   - DECISION-REGISTRY-SHAPED-REPO
@@ -9,28 +9,18 @@ connections:
 
 # The add CLI — resolver + copier
 
-**Status: not built — the next milestone.** `npx @magic-spells/puzzle-pieces add <piece…>` is the automated copy-in path for external apps. Because the repo is registry-shaped ([[DECISION-REGISTRY-SHAPED-REPO]]) the CLI is a pure resolver + file-copier, never a build tool.
+**Status: SHIPPED 2026-07-17 — as `puzzle add piece <name…>` in the Puzzle Go CLI** (framework-CLI integration chosen over a standalone npm package; there is no `@magic-spells/puzzle-pieces` npm package and none is planned). Lives in `../puzzle/compiler/internal/pieces/` + `add.go`, with 22 Go tests, verified end-to-end against this registry (button; date-picker → calendar + `lib/date-math.js` transitively; conflict refusal; consumer app builds with pieces + morph-engine). Because the repo is registry-shaped ([[DECISION-REGISTRY-SHAPED-REPO]]) the CLI is a pure resolver + file-copier, never a build tool.
 
-## Behavior
+## Shipped contract (what this registry must stay compatible with)
 
-1. Read `registry.json`; resolve the requested pieces **plus their `registryDependencies` transitively** (dedupe).
-2. Copy each file to its manifest `targetDir` — pieces → `app/components/ui/`, `lib/*.js` → `app/lib/`.
-3. **Refuse to overwrite an existing target file unless `--overwrite`.**
-4. **Print — never auto-run — the npm install** command for the accumulated `dependencies` (e.g. `@magic-spells/morph-engine`).
-5. If the app's `styles.css` lacks the pieces tokens, **print the `pieces.css` merge snippet**.
-6. **Never rewrite the user's files** — print snippets, following Puzzle's D3 precedent.
+1. **Registry source chain:** `--registry <path|url>` flag → `PUZZLE_PIECES_REGISTRY` env var → default `https://raw.githubusercontent.com/magic-spells/puzzle-pieces/main/registry`. The default URL goes live the moment this repo is public — that IS the publish ([[RELEASE-V0-1-0]]).
+2. Reads `registry.json`; resolves requested pieces **plus `registryDependencies` transitively** (dedupe). Pieces → `app/components/ui/`, `lib/*.js` → `app/lib/`.
+3. **Refuses to overwrite an existing target unless `--overwrite`** — all-or-nothing pre-flight.
+4. **Prints — never auto-runs — the npm install** for accumulated `dependencies` (e.g. `@magic-spells/morph-engine`). Never rewrites user files (Puzzle D3 precedent: print snippets).
+5. **Theme is copied like a piece:** `theme/pieces.css` is written verbatim to `app/styles/pieces.css` (+ lock entry) when the app has neither the tokens nor the file, and the one-line `@import './pieces.css';` wiring step is printed (styles.css is user-owned). Detection keys on the `puzzle-pieces design tokens` header comment / a `pieces.css` reference in styles.css — **don't reword that comment without updating the CLI's marker.**
+6. **No header stamps** — copies stay byte-identical to the registry (diffable). `pieces.lock` at the consumer app root records **sha256 content hashes** per piece/lib (hashes, not versions, so nothing needs bumping) enabling a future `diff`/`update` to distinguish upstream-changed from locally-customized.
 
-## Scope
+## Remaining follow-ups
 
-- In: resolve/copy/refuse-overwrite/print-installs/print-tokens.
-- Out (deferred, but designed for): stamp a piece-name + registry-version header in copied files, or a `pieces.lock`, to enable a future `diff`/`update` command. A later `puzzle add piece <name>` framework alias could delegate to `npx @magic-spells/puzzle-pieces` — keep the standalone CLI first.
-
-## Acceptance
-
-- `add date-picker` copies `DatePicker.pzl`, pulls `calendar` + `lib/date-math.js` transitively, prints the `@magic-spells/morph-engine` install line, and prints the tokens snippet if missing — touching no existing file without `--overwrite`.
-
-## Notes
-
-- Model on `puzzle add` / `puzzle generate` (`../puzzle/compiler/cmd/puzzle/generate.go`, `initcmd.go`, `compiler/internal/scaffold/templates/`).
-- Local dev can point the registry fetch at this repo's path before anything is published.
-- Ships as part of [[RELEASE-V0-1-0]], with the registry embedded in the tarball (`files: ["registry", "bin"]`).
+- Docs pages for the CLI flow (in the demo docs site or the future Astro docs).
+- The `diff`/`update` command built on `pieces.lock`.

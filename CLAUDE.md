@@ -1,8 +1,8 @@
 # CLAUDE.md — puzzle-pieces
 
 Canonical agent guide for this repo. Read this every session before touching anything.
-While it still exists, `PLAN.md` holds deeper rationale, per-wave briefs, and the status
-log — but this file is the durable contract and stands alone.
+This file is the durable contract and stands alone; deeper rationale lives in the
+`constellation/` cards.
 
 ## What this repo is
 
@@ -70,9 +70,10 @@ Rules that follow from this:
 
 ## Verification workflow
 
-- **Compile-verify:** `cd demo && npm run build`. This uses the LOCAL sibling puzzle
-  checkout (`../../puzzle/puzzle` Go binary) — puzzle is not yet on npm. Every non-trivial
-  change must compile clean before it's done.
+- **Compile-verify:** `cd demo && npm run build`. `@magic-spells/puzzle` is installed from
+  npm (the `puzzle` bin resolves per-platform binary packages); a globally installed
+  `puzzle` run directly in `demo/` works too. Every non-trivial change must compile clean
+  before it's done.
 - **Dev server:** `cd demo && npm run dev` on **port 3070** (3000 and several other ports
   are taken by sibling projects). Browser-smoke interactive pieces in a FOREGROUNDED tab —
   Puzzle's rAF-based view scheduler stalls re-renders in a hidden/backgrounded tab.
@@ -155,13 +156,23 @@ Rules that follow from this:
   literal-form would be parsed as a tag — put the text in an interpolation:
   `<code>{ '<figure>' }</code>`.
 
-## The planned `add` CLI
+## The `add` CLI (shipped in the Puzzle Go CLI)
 
-`npx @magic-spells/puzzle-pieces add <piece…>` (not built yet): read `registry.json`,
-resolve requested pieces + their `registryDependencies` transitively (dedupe), and copy each
-file to its manifest `targetDir` (`app/components/ui/` for pieces, `app/lib/` for lib files).
-**Refuse to overwrite an existing target file unless `--overwrite`.** Then PRINT — never
-auto-run — the npm install command for accumulated `dependencies`, and print the `pieces.css`
-token merge snippet if the app lacks it. **Never rewrite the user's files** (print snippets,
-following Puzzle's precedent). Consider stamping copied files with a piece-name/version header
-to enable a future `diff`/`update` command.
+`puzzle add piece <name…>` lives in the puzzle repo (`../puzzle/compiler/internal/pieces/`
++ `add.go`) — there is NO npm package; making this repo public activates the default
+registry URL. Contract this registry must stay compatible with:
+
+- Registry source chain: `--registry <path|url>` flag → `PUZZLE_PIECES_REGISTRY` env var
+  → `https://raw.githubusercontent.com/magic-spells/puzzle-pieces/main/registry`.
+- Reads `registry.json`, resolves `registryDependencies` transitively (dedupe), copies each
+  file to its manifest `targetDir` (`app/components/ui/` for pieces, `app/lib/` for lib
+  files). **Refuses to overwrite an existing target unless `--overwrite`** (all-or-nothing
+  pre-flight). PRINTS — never auto-runs — npm installs for accumulated `dependencies`.
+- Theme is copied like a piece: `theme/pieces.css` is written verbatim to
+  `app/styles/pieces.css` when the app has neither the tokens nor the file, and the
+  one-line `@import './pieces.css';` wiring step is printed (styles.css is user-owned).
+  Detection keys on the `puzzle-pieces design tokens` header comment in `pieces.css` —
+  **don't reword that comment without updating the CLI's marker.**
+- Copies stay **byte-identical** to the registry (no stamped headers); `pieces.lock` at the
+  consumer app root records sha256 content hashes per piece/lib so a future `diff`/`update`
+  can distinguish upstream-changed from locally-customized.

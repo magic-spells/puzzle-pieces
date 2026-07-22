@@ -12,26 +12,41 @@ puzzle-pieces embraces it: each piece is source you copy into `app/components/ui
 Your `puzzle build` compiles it, your Tailwind scan picks up its classes, and the
 code is yours to restyle and rework.
 
-## Status
+## Usage
 
-**40 pieces built** — the full wave 1–5 roadmap plus extras: Button, Label, Field,
-PasswordField, SearchField, Textarea, Checkbox, RadioGroup, Switch, Select,
-QuantityInput, Spinner, Dialog, DropdownMenu, Popover, Tooltip, Sheet, Command,
-Tabs, Collapsible, Toast, Progress, Avatar, Badge, Alert, Skeleton, Separator, Kbd,
-Card, Empty, Breadcrumb, Pagination, Table, Toggle, ToggleGroup, Accordion,
-AlertDialog, Slider, Calendar, DatePicker (Slider and Calendar/DatePicker are
-native ports of the range-slider and date-picker web components).
-
-Browse them in `registry/ui/` (one folder per piece, `piece.json` manifest each) or
-run the demo app: `cd demo && npm run dev` (port 3070). Architecture, conventions,
-and the CLI spec live in [PLAN.md](./PLAN.md). The `add` CLI is the next milestone.
-
-## How it will work
+The Puzzle CLI installs pieces straight from this registry:
 
 ```sh
-npx @magic-spells/puzzle-pieces add button select
+puzzle add piece button select
 ```
 
-…copies `Button.pzl` and `Select.pzl` (plus any shared lib files) into your app and
-prints anything else you need. Until the CLI ships, copy files from `registry/ui/`
-by hand.
+That copies `Button.pzl` and `Select.pzl` into `app/components/ui/` (plus any shared
+`lib/` helpers and sibling pieces they depend on, resolved transitively), copies the
+`pieces.css` design tokens into your app if you don't have them yet, and prints —
+never auto-runs — any npm install you need. Existing files are never overwritten
+unless you pass `--overwrite`, and a `pieces.lock` of content hashes is kept so a
+future `diff`/`update` command can tell upstream changes from your local edits.
+
+You can also just copy files from `registry/ui/` by hand — every piece is plain
+source with a `piece.json` manifest describing its files and dependencies.
+
+## What's inside
+
+**85 pieces**, from primitives (Button, Field, Select, Checkbox, Switch) through
+overlays (Dialog, Sheet, Popover, DropdownMenu, Command), data display (DataTable,
+Timeline, Tree, StatCard), charts (LineChart, BarChart, AreaChart, PieChart,
+Sparkline), and app-scale composites (Kanban, Sidebar, ChatScroller, Stepper).
+Browse them all in [`registry/ui/`](./registry/ui/), or run the demo/docs app:
+
+```sh
+cd demo && npm install && npm run dev   # http://localhost:3070
+```
+
+Every piece is a native Puzzle component compiling to plain semantic HTML with ARIA
+and Tailwind utility classes against the semantic tokens in
+[`registry/theme/pieces.css`](./registry/theme/pieces.css) — no custom elements, no
+hex colors, controlled-component APIs throughout.
+
+## License
+
+[MIT](./LICENSE)

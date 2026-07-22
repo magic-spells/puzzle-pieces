@@ -30,7 +30,7 @@ connections:
 # Puzzle Pieces
 
 A **copy-in** UI component registry for the [Puzzle framework](../puzzle):
-41 Tailwind-styled, accessible, morph-aware `.pzl` pieces distributed as **source you
+85 Tailwind-styled, accessible, morph-aware `.pzl` pieces distributed as **source you
 copy into a consumer app**, not packages you install. This card is the map; the
 always-load rules, conventions, and hard-won gotchas live in `CLAUDE.md` (read it every
 session) and are not duplicated here.
@@ -51,10 +51,10 @@ registry shape, the CLI, the native rebuilds — follows from it. See
   the generated `registry.json` index, `theme/pieces.css` tokens, `lib/` helpers.
 - [[DOC-DEMO-DOCS-SITE]] — the in-repo `demo/` Puzzle app (port 3070): the
   docs shell + dev/integration harness that consumes copies of the pieces.
-- [[FEATURE-ADD-CLI]] — the planned `npx … add <piece>` resolver+copier (next milestone).
+- [[FEATURE-ADD-CLI]] — the shipped `puzzle add piece <name…>` resolver+copier (lives in the Puzzle Go CLI).
 - [[RELEASE-V0-1-0]] — the first-publish milestone + current publishing state + open items.
 
-## The settled decisions (don't re-litigate without Cory)
+## The settled decisions (don't re-litigate without the maintainer)
 
 - [[DECISION-COPY-IN-DISTRIBUTION]] — copy-in, not npm import (npm rejected for v1).
 - [[DECISION-NATIVE-REBUILD]] — native `.pzl` rebuilds, not wrappers over the existing
@@ -65,7 +65,8 @@ registry shape, the CLI, the native rebuilds — follows from it. See
 
 ## Current state
 
-All 41 pieces are built, compile-verified against the real compiler, and demo-verified
-(waves 1–6 + the docs-site refactor — see git history / the soon-to-be-deleted `PLAN.md`
-for the build log). Not yet published; the [[FEATURE-ADD-CLI]] is the next milestone.
-Sibling repos are linked in `connected_repos` above (`repo:` selector targets each).
+All 85 pieces are built, compile-verified against the real compiler, and demo-verified.
+The [[FEATURE-ADD-CLI]] shipped in the Puzzle Go CLI (`puzzle add piece`). Publishing
+v0.1.0 means making this repo public — no npm package — and is tracked in
+[[RELEASE-V0-1-0]]. Sibling repos are linked in `connected_repos` above (`repo:`
+selector targets each).

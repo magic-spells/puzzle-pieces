@@ -20,7 +20,7 @@ Structure the repo as a **registry from the first commit**, with deliberately **
 ## Alternatives rejected
 
 - **A bespoke manifest format** — rejected; the conventional shape keeps the resolution algorithm (resolve deps transitively, dedupe, copy to `targetDir`) a known, boring pattern.
-- **Deferring structure until the CLI is written** — rejected; building pieces into an ad-hoc layout first would force a migration later. The registry shape was paid for up front so all 41 pieces already conform.
+- **Deferring structure until the CLI is written** — rejected; building pieces into an ad-hoc layout first would force a migration later. The registry shape was paid for up front so every piece already conforms.
 
 ## Consequences
 

@@ -11,7 +11,7 @@ connections:
 
 ## Context
 
-Cory already maintains ~15 mature `@magic-spells/*` web components (dialog-panel, select-dropdown, dropdown-panel, tab-group, quantity-input, collapsible-content, notification-stack, range-slider, date-picker, panel-stack, …). The tempting shortcut is to wrap them as Puzzle pieces (the Radix-over-primitives analogy).
+The `@magic-spells` ecosystem already has ~15 mature web components (dialog-panel, select-dropdown, dropdown-panel, tab-group, quantity-input, collapsible-content, notification-stack, range-slider, date-picker, panel-stack, …). The tempting shortcut is to wrap them as Puzzle pieces — a thin layer over existing primitives.
 
 ## Decision
 
