@@ -1,4 +1,4 @@
-# puzzle-pieces
+# Puzzle Pieces
 
 Beautifully-behaved UI components for the [Puzzle framework](https://github.com/magic-spells/puzzle).
 Tailwind-styled, accessible, morph-aware — and **copied into your app, not installed
