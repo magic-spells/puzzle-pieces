@@ -2,7 +2,7 @@
   <header class="sticky top-0 z-40 border-b border-border bg-page/85 backdrop-blur">
     <div class="flex h-14 w-full items-center justify-between px-gutter">
       <a
-        href="/"
+        href="#/"
         class="rounded-md text-[15px] font-semibold tracking-tight text-ink outline-ring focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
         Puzzle Pieces
       </a>

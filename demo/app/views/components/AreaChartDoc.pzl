@@ -5,7 +5,7 @@
         <h1 class="text-3xl font-semibold tracking-tight text-ink">Area Chart</h1>
         <p class="mt-2 text-body">
           The
-          <a href="/components/line-chart" class="font-medium text-brand hover:underline">line chart</a>'s
+          <a href="#/components/line-chart" class="font-medium text-brand hover:underline">line chart</a>'s
           filled sibling — same config-first, responsive shape, plus a low-opacity fill wash under a
           full-strength 2px edge line. Pass
           <code class="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[13px] text-ink">stacked</code>

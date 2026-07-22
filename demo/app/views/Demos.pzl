@@ -12,7 +12,7 @@
       {#for demo in demos}
         <Card title={ demo.title } description={ demo.description } class="h-full">
           <a
-            href={ demo.path }
+            href="#{ demo.path }"
             class="text-sm font-medium text-brand hover:text-brand-dark">Open { demo.title } →</a>
         </Card>
       {/for}

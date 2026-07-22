@@ -4,7 +4,7 @@
     <ul class="space-y-0.5">
       {#for item in started}
         <li key={ item.path }>
-          <a href={ item.path } class={ item.class }>{ item.title }</a>
+          <a href="#{ item.path }" class={ item.class }>{ item.title }</a>
         </li>
       {/for}
     </ul>
@@ -15,7 +15,7 @@
         <ul class="space-y-0.5">
           {#for item in section.items}
             <li key={ item.path }>
-              <a href={ item.path } class={ item.class }>{ item.title }</a>
+              <a href="#{ item.path }" class={ item.class }>{ item.title }</a>
             </li>
           {/for}
         </ul>
