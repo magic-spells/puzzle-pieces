@@ -42,6 +42,8 @@ import DescriptionListDoc from './views/components/DescriptionListDoc.pzl';
 import DialogDoc from './views/components/DialogDoc.pzl';
 import DropdownMenuDoc from './views/components/DropdownMenuDoc.pzl';
 import DropzoneDoc from './views/components/DropzoneDoc.pzl';
+import EmojiPickerDoc from './views/components/EmojiPickerDoc.pzl';
+import EmojiPickerSimpleDoc from './views/components/EmojiPickerSimpleDoc.pzl';
 import EmptyDoc from './views/components/EmptyDoc.pzl';
 import FieldDoc from './views/components/FieldDoc.pzl';
 import HoverCardDoc from './views/components/HoverCardDoc.pzl';
@@ -390,6 +392,20 @@ export default [
 		view: DropzoneDoc,
 		layout: DefaultLayout,
 		meta: { title: 'Dropzone — Puzzle Pieces' },
+	},
+	{
+		path: '/components/emoji-picker',
+		name: 'emoji-picker',
+		view: EmojiPickerDoc,
+		layout: DefaultLayout,
+		meta: { title: 'Emoji Picker — Puzzle Pieces' },
+	},
+	{
+		path: '/components/emoji-picker-simple',
+		name: 'emoji-picker-simple',
+		view: EmojiPickerSimpleDoc,
+		layout: DefaultLayout,
+		meta: { title: 'Emoji Picker Simple — Puzzle Pieces' },
 	},
 	{
 		path: '/components/empty',
