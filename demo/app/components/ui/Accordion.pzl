@@ -32,7 +32,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Accordion — the group coordinator over Collapsible's animation approach.
@@ -232,4 +232,4 @@ export default class Accordion extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -87,7 +87,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Pagination from './Pagination.pzl';
 
@@ -438,4 +438,4 @@ export default class DataTable extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

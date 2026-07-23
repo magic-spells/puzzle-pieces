@@ -24,7 +24,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Textarea — Field's composite pattern for multi-line text: label, hint/error,
@@ -90,4 +90,4 @@ export default class Textarea extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

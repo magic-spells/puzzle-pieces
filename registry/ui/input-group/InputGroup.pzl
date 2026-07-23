@@ -33,7 +33,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // InputGroup — a Field-compatible text input with fused leading/trailing addons.
@@ -136,4 +136,4 @@ export default class InputGroup extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

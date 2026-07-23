@@ -94,7 +94,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Carousel from '@/components/ui/Carousel.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -172,4 +172,4 @@ export default class CarouselDoc extends PuzzleView {
     setLoopIdx: (index) => this.setData('loopIdx', index),
   };
 }
-</scripts>
+</script>

@@ -68,7 +68,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import AreaChart from '@/components/ui/AreaChart.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -189,4 +189,4 @@ export default class AreaChartDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

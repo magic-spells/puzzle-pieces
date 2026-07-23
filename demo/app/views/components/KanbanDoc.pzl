@@ -130,7 +130,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Kanban from '@/components/ui/Kanban.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -283,4 +283,4 @@ export default class KanbanDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

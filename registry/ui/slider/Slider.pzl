@@ -61,7 +61,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Slider — a touch-friendly single-value or dual-thumb range slider, ported
@@ -636,4 +636,4 @@ export default class Slider extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

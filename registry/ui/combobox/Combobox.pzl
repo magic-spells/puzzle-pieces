@@ -102,7 +102,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Combobox — a filterable autocomplete: a role=combobox text input over a
@@ -771,4 +771,4 @@ export default class Combobox extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

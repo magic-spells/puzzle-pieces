@@ -46,7 +46,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import DropdownMenu from '@/components/ui/DropdownMenu.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -149,4 +149,4 @@ export default class DropdownMenuDoc extends PuzzleView {
     onSelect: (value) => toast({ message: 'Menu: ' + value }),
   };
 }
-</scripts>
+</script>

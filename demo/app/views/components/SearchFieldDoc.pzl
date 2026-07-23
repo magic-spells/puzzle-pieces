@@ -50,7 +50,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import SearchField from '@/components/ui/SearchField.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -106,4 +106,4 @@ export default class SearchFieldDoc extends PuzzleView {
     runSearch: (v) => toast({ message: 'Searching for: ' + (v || 'nothing'), variant: 'success' }),
   };
 }
-</scripts>
+</script>

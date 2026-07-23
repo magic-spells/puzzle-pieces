@@ -123,7 +123,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import {
   parseISODate,
@@ -880,4 +880,4 @@ export default class Calendar extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

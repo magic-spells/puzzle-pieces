@@ -13,11 +13,11 @@
  *      `{:when}` `{/if}` … — directive name as a keyword, condition as an expression.
  *   3. Sigil attributes — `@event={ … }` bindings and `:prop` shorthands keep their
  *      sigil and get their own color (see `.hljs-attr.directive_` in the
- *      <styles> block of ui/code/Code.pzl).
+ *      <style> block of ui/code/Code.pzl).
  *   4. Formatters — the `| formatter(args)` tail inside an interpolation.
  *
  * Plus two escapes back into JavaScript, because docs snippets are usually mixed:
- *   - a `<scripts>` block (full-file `.pzl` snippets) highlights as JS;
+ *   - a `<script>` block (full-file `.pzl` snippets) highlights as JS;
  *   - a JS tail — the common "markup, blank line, `// parent` + a handler object"
  *     shape — is handed to the real JS grammar as a sublanguage, so `this`,
  *     arrow functions and template literals all resolve properly.
@@ -52,7 +52,7 @@ function re(...parts) {
  * (`const events = […]`, `events.push(…)`) is left alone.
  *
  * Registered AS `javascript`, not alongside it: docs snippets reach the JS
- * grammar three ways — `lang="js"`, the puzzle grammar's `<scripts>` block and
+ * grammar three ways — `lang="js"`, the puzzle grammar's `<script>` block and
  * its JS tail, and JSX — and all three should agree.
  */
 export function puzzleJavascript(hljs) {
@@ -194,10 +194,10 @@ export default function puzzleLang(hljs) {
       // lookbehind keeps `https://…` in body text out of it.
       { scope: 'comment', match: /(?:^|(?<=\s))\/\/[^\n]*/, relevance: 0 },
       { scope: 'symbol', match: /&[a-z]+;|&#[0-9]+;|&#x[a-f0-9]+;/ },
-      // `<scripts>` / `<script>` / `<style>` bodies -> real JS / CSS.
+      // `<script>` / `<script>` / `<style>` bodies -> real JS / CSS.
       {
         scope: 'tag',
-        begin: /<scripts?(?=\s|>)/,
+        begin: /<script?(?=\s|>)/,
         end: />/,
         keywords: { name: 'script scripts' },
         contains: [TAG_INTERNALS],

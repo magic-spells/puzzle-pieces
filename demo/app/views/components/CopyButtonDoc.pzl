@@ -87,7 +87,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import CopyButton from '@/components/ui/CopyButton.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -163,4 +163,4 @@ export default class CopyButtonDoc extends PuzzleView {
     onCopied: (value) => toast({ message: `Copied "${value}" to clipboard.`, variant: 'success' }),
   };
 }
-</scripts>
+</script>

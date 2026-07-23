@@ -89,7 +89,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ButtonGroup from '@/components/ui/ButtonGroup.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -181,4 +181,4 @@ export default class ButtonGroupDoc extends PuzzleView {
     act: (value) => toast({ message: `Pressed “${value}”.`, variant: 'success' }),
   };
 }
-</scripts>
+</script>

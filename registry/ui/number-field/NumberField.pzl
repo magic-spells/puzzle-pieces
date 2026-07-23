@@ -56,7 +56,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // NumberField — the general-purpose numeric FORM field.
@@ -270,4 +270,4 @@ export default class NumberField extends PuzzleView {
     stepDown: (event) => this.stepBy(-this.getData().step, event),
   };
 }
-</scripts>
+</script>

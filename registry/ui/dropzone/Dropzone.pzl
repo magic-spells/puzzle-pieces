@@ -68,7 +68,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ChatAttachment from './ChatAttachment.pzl';
 
@@ -306,4 +306,4 @@ export default class Dropzone extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

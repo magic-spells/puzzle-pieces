@@ -111,7 +111,7 @@
   </figure>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { extent, niceDomain, linearScale, bandScale, linePath, formatTick } from '../../lib/chart-math.js';
 
@@ -394,4 +394,4 @@ export default class LineChart extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

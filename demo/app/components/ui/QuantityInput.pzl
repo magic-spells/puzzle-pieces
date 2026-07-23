@@ -36,7 +36,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // QuantityInput — an e-commerce stepper ported from @magic-spells/quantity-input.
@@ -128,4 +128,4 @@ export default class QuantityInput extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

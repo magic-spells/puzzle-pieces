@@ -207,7 +207,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import PanelStack from '@/components/ui/PanelStack.pzl';
 import Button from '@/components/ui/Button.pzl';
@@ -325,4 +325,4 @@ export default class PanelStackDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

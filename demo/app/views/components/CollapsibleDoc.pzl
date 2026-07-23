@@ -75,7 +75,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Collapsible from '@/components/ui/Collapsible.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -154,4 +154,4 @@ export default class CollapsibleDoc extends PuzzleView {
     toggleGroup: (id) => this.setData('groupId', this.getData().groupId === id ? null : id),
   };
 }
-</scripts>
+</script>

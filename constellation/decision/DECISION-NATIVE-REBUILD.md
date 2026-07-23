@@ -15,7 +15,7 @@ The `@magic-spells` ecosystem already has ~15 mature web components (dialog-pane
 
 ## Decision
 
-Every piece is a **native `.pzl` rebuild** — real Puzzle components (`<Select …/>`, capitalized tags) compiling to plain semantic HTML with ARIA + Tailwind. **No custom elements, no `customElements.define`, no `<select-dropdown-trigger>` tags, no `<styles>` blocks.** The transferable IP is the *behavior design* (keyboard nav, ARIA state machines, gesture handling), re-expressed against Puzzle's primitives — not the code.
+Every piece is a **native `.pzl` rebuild** — real Puzzle components (`<Select …/>`, capitalized tags) compiling to plain semantic HTML with ARIA + Tailwind. **No custom elements, no `customElements.define`, no `<select-dropdown-trigger>` tags, no `<style>` blocks.** The transferable IP is the *behavior design* (keyboard nav, ARIA state machines, gesture handling), re-expressed against Puzzle's primitives — not the code.
 
 ## Alternatives rejected
 

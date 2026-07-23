@@ -276,7 +276,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Sidebar from '../components/ui/Sidebar.pzl';
 import Tree from '../components/ui/Tree.pzl';
@@ -686,4 +686,4 @@ export default class ProjectDemo extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

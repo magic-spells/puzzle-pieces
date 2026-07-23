@@ -59,7 +59,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Progress from '@/components/ui/Progress.pzl';
 import Button from '@/components/ui/Button.pzl';
@@ -121,4 +121,4 @@ export default class ProgressDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

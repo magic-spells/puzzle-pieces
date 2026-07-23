@@ -91,7 +91,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { MorphEngine } from '@magic-spells/morph-engine';
 
@@ -653,4 +653,4 @@ export default class Select extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

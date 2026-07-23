@@ -328,7 +328,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Sidebar from '../components/ui/Sidebar.pzl';
 import Tabs from '../components/ui/Tabs.pzl';
@@ -798,4 +798,4 @@ export default class AdminDemo extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -58,7 +58,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Button from '@/components/ui/Button.pzl';
 import Tooltip from '@/components/ui/Tooltip.pzl';
@@ -108,4 +108,4 @@ export default class TooltipDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

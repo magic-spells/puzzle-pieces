@@ -67,7 +67,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import DescriptionList from '@/components/ui/DescriptionList.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -133,4 +133,4 @@ export default class DescriptionListDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

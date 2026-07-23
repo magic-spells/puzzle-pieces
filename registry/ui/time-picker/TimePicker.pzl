@@ -84,7 +84,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // TimePicker — a Field-shaped trigger + popover for choosing a time, built on the
@@ -653,4 +653,4 @@ export default class TimePicker extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

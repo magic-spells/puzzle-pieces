@@ -105,7 +105,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Calendar from '@/components/ui/Calendar.pzl';
 import DatePicker from '@/components/ui/DatePicker.pzl';
@@ -198,4 +198,4 @@ export default class CalendarDoc extends PuzzleView {
     setMorphDate: (iso) => this.setData('morphDate', iso),
   };
 }
-</scripts>
+</script>

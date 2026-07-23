@@ -49,7 +49,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Spinner from '@/components/ui/Spinner.pzl';
 import Button from '@/components/ui/Button.pzl';
@@ -104,4 +104,4 @@ export default class SpinnerDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

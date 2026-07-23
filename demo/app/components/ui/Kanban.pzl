@@ -73,7 +73,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Kanban — a config-first, controlled Kanban board: horizontal columns, each a
@@ -704,4 +704,4 @@ export default class Kanban extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

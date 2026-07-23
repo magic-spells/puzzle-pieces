@@ -100,7 +100,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Rating from '@/components/ui/Rating.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -186,4 +186,4 @@ export default class RatingDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

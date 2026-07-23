@@ -60,7 +60,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Button from '@/components/ui/Button.pzl';
 import Sheet from '@/components/ui/Sheet.pzl';
@@ -109,4 +109,4 @@ export default class SheetDoc extends PuzzleView {
     closeSheet: () => this.setData('sheetOpen', false),
   };
 }
-</scripts>
+</script>

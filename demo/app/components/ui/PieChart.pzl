@@ -56,7 +56,7 @@
   </figure>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { arcPath, formatTick } from '../../lib/chart-math.js';
 
@@ -270,4 +270,4 @@ export default class PieChart extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -20,7 +20,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Card from '@/components/ui/Card.pzl';
 
@@ -62,4 +62,4 @@ export default class Demos extends PuzzleView {
     return { demos };
   }
 }
-</scripts>
+</script>

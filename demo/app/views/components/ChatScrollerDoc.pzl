@@ -91,7 +91,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ChatScroller from '@/components/ui/ChatScroller.pzl';
 import ChatMessage from '@/components/ui/ChatMessage.pzl';
@@ -206,4 +206,4 @@ export default class ChatScrollerDoc extends PuzzleView {
     setPinned: (isPinned) => this.setData({ pinned: isPinned }),
   };
 }
-</scripts>
+</script>

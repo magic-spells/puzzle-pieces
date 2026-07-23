@@ -63,7 +63,7 @@
   </nav>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // NavigationMenu — a horizontal site-header navigation with flyout panels,
@@ -357,4 +357,4 @@ export default class NavigationMenu extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

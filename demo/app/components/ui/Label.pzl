@@ -4,7 +4,7 @@
   </label>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Label — a plain <label> for a form control. Point `for` at the control's id
@@ -23,4 +23,4 @@ export default class Label extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

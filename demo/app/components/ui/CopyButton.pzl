@@ -22,7 +22,7 @@
   </button>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // CopyButton — a click-to-copy control: writes `value` to the clipboard, then
@@ -144,4 +144,4 @@ export default class CopyButton extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

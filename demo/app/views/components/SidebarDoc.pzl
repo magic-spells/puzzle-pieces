@@ -153,7 +153,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Sidebar from '@/components/ui/Sidebar.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -290,4 +290,4 @@ export default class SidebarDoc extends PuzzleView {
     toggleCollapsed: () => this.setData('collapsed', !this.getData().collapsed),
   };
 }
-</scripts>
+</script>

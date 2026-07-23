@@ -21,7 +21,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Tabs — an accessible ARIA tablist ported from @magic-spells/tab-group
@@ -197,4 +197,4 @@ export default class Tabs extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

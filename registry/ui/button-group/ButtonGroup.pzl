@@ -19,7 +19,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ButtonGroup — a joined row of ACTION buttons (a segmented toolbar cluster:
@@ -146,4 +146,4 @@ export default class ButtonGroup extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -67,7 +67,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Button from '@/components/ui/Button.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -129,4 +129,4 @@ export default class ToastDoc extends PuzzleView {
     clearAll: () => clearToasts(),
   };
 }
-</scripts>
+</script>

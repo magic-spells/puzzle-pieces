@@ -61,7 +61,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // DropdownMenu — a click-toggle dropdown menu, ported from the
@@ -325,4 +325,4 @@ export default class DropdownMenu extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

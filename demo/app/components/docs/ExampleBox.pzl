@@ -20,7 +20,7 @@
   </section>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Code from '../ui/Code.pzl';
 
@@ -44,7 +44,7 @@ import Code from '../ui/Code.pzl';
 //   id     anchor id on the <section> (Toc scrolls to it; scroll-mt clears the
 //          sticky header)
 //   code   the usage snippet, a plain template-literal string from the view's
-//          <scripts>
+//          <script>
 //   lang   optional language hint forwarded to Code (auto-guessed otherwise)
 //   tall   default true — min-h-[350px] centered preview; pass tall={ false }
 //          for compact demos (e.g. a lone Kbd) to sit in a shorter box
@@ -64,4 +64,4 @@ export default class ExampleBox extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

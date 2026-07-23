@@ -67,7 +67,7 @@
   </dialog>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Command — a command palette, self-contained: no other pieces imported. Built
@@ -421,4 +421,4 @@ export default class Command extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

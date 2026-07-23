@@ -57,7 +57,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Carousel — a horizontal, accessible slideshow. Slides are the component's
@@ -456,4 +456,4 @@ export default class Carousel extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

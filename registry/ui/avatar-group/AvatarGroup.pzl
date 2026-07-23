@@ -12,7 +12,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Avatar from './Avatar.pzl';
 
@@ -105,4 +105,4 @@ export default class AvatarGroup extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

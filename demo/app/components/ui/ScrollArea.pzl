@@ -30,7 +30,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ScrollArea — a wrapper that hides the native scrollbar and paints its own
@@ -377,4 +377,4 @@ export default class ScrollArea extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

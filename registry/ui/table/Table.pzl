@@ -30,7 +30,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Table — the styled semantic-table tier, NOT a data-table. Config-first: a
@@ -122,4 +122,4 @@ export default class Table extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

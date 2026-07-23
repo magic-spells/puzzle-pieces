@@ -46,7 +46,7 @@
   </ol>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Timeline — a vertical event feed rendered entirely from an `items` array. A
@@ -161,4 +161,4 @@ export default class Timeline extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

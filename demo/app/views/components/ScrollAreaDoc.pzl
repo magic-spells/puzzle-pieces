@@ -83,7 +83,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ScrollArea from '@/components/ui/ScrollArea.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -160,4 +160,4 @@ export default class ScrollAreaDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

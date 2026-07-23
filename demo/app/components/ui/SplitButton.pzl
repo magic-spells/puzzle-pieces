@@ -53,7 +53,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // SplitButton — a primary action button fused to a dropdown caret that opens a
@@ -348,4 +348,4 @@ export default class SplitButton extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

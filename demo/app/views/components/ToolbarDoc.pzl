@@ -110,7 +110,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Toolbar from '@/components/ui/Toolbar.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -229,4 +229,4 @@ export default class ToolbarDoc extends PuzzleView {
     setGrid: ({ pressed }) => this.setData({ grid: pressed }),
   };
 }
-</scripts>
+</script>

@@ -62,7 +62,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // TagsInput — a FREE-TEXT tag entry field. The user types a tag and commits it
@@ -296,4 +296,4 @@ export default class TagsInput extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

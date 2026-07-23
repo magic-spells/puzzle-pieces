@@ -4,7 +4,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Masonry — a responsive, measurement-free gallery layout built on CSS
@@ -157,4 +157,4 @@ export default class Masonry extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

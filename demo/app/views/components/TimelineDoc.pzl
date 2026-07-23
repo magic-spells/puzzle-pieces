@@ -77,7 +77,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Timeline from '@/components/ui/Timeline.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -301,4 +301,4 @@ export default class TimelineDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

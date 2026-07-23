@@ -67,7 +67,7 @@
   <Toaster position="bottom-right"/>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Toaster from '../components/ui/Toaster.pzl';
 import Collapsible from '../components/ui/Collapsible.pzl';
@@ -121,4 +121,4 @@ export default class DefaultLayout extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

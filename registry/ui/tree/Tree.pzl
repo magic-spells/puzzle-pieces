@@ -38,7 +38,7 @@
   </ul>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Tree — a config-first WAI-ARIA tree view (file-explorer style) rendered from a
@@ -300,4 +300,4 @@ export default class Tree extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

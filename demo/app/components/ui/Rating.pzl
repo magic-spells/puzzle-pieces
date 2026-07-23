@@ -47,7 +47,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Rating — a star rating in two modes. In DISPLAY mode (readOnly) it renders a
@@ -255,4 +255,4 @@ export default class Rating extends PuzzleView {
 function formatNum(n) {
   return String(Math.round(n * 2) / 2);
 }
-</scripts>
+</script>

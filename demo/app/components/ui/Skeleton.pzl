@@ -2,7 +2,7 @@
   <div class={ classes } aria-hidden="true"></div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Skeleton — a pulsing placeholder for content that hasn't loaded. The variant
@@ -39,4 +39,4 @@ export default class Skeleton extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

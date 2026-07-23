@@ -83,7 +83,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Slider from '@/components/ui/Slider.pzl';
 import Label from '@/components/ui/Label.pzl';
@@ -169,4 +169,4 @@ export default class SliderDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

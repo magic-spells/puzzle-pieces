@@ -5,7 +5,7 @@
     aria-label={ label }></span>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Rotating-ring spinner: a border-border ring with its top edge tinted brand,
@@ -26,4 +26,4 @@ export default class Spinner extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

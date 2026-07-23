@@ -2,7 +2,7 @@
   <div class={ classes } role="separator" aria-orientation={ ariaOrientation }></div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Separator — a hairline divider. Horizontal (the default) is a full-width rule;
@@ -32,4 +32,4 @@ export default class Separator extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

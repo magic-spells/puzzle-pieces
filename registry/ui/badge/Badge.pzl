@@ -2,7 +2,7 @@
   <span class={ classes }><Slot/></span>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Badge — a small status chip. Variants are plain lookup maps composed into one
@@ -34,4 +34,4 @@ export default class Badge extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

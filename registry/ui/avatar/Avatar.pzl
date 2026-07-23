@@ -12,7 +12,7 @@
   </span>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Avatar — an image with a graceful fallback. With a valid `src` it renders the
@@ -83,4 +83,4 @@ export default class Avatar extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

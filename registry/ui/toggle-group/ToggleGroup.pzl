@@ -14,7 +14,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ToggleGroup — a joined row of pressed-state buttons (text-alignment picker,
@@ -129,4 +129,4 @@ export default class ToggleGroup extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

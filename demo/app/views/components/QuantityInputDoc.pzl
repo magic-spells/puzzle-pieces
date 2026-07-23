@@ -49,7 +49,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import QuantityInput from '@/components/ui/QuantityInput.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -102,4 +102,4 @@ export default class QuantityInputDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

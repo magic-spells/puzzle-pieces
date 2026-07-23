@@ -58,7 +58,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Field from '@/components/ui/Field.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -112,4 +112,4 @@ export default class FieldDoc extends PuzzleView {
     setName: (v) => this.setData('name', v),
   };
 }
-</scripts>
+</script>

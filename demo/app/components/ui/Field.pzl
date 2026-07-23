@@ -26,7 +26,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Field — the workhorse labeled text input (composite and config-first: label,
@@ -91,4 +91,4 @@ export default class Field extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -14,7 +14,7 @@
   </nav>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Toc — the "On This Page" column (docs-only). Config-first: items are
@@ -42,4 +42,4 @@ export default class Toc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

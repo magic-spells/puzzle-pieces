@@ -25,7 +25,7 @@
   </nav>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Breadcrumb — config-first: the whole trail renders from an `items` array.
@@ -58,4 +58,4 @@ export default class Breadcrumb extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

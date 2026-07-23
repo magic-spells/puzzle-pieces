@@ -29,6 +29,6 @@ Demo-only components, **NOT registry pieces** (they never ship to consumers):
 
 ## Per-piece pages
 
-One page per piece at `/components/<name>` in `app/views/components/*Doc.pzl`, wired in `app/routes.js` (kebab piece names, alphabetical imports). **`ButtonDoc.pzl` is the exemplar** every other page follows: H1 + description (from `piece.json`) → Installation → hero ExampleBox → one ExampleBox per additional example, with Toc ids. Code samples live as **template-literal consts** in each view's `<scripts>` (literal angle-bracket tags and `{#if}`/`{#for}` tokens break template *prose* but are safe inside JS template strings — recorded gotcha).
+One page per piece at `/components/<name>` in `app/views/components/*Doc.pzl`, wired in `app/routes.js` (kebab piece names, alphabetical imports). **`ButtonDoc.pzl` is the exemplar** every other page follows: H1 + description (from `piece.json`) → Installation → hero ExampleBox → one ExampleBox per additional example, with Toc ids. Code samples live as **template-literal consts** in each view's `<script>` (literal angle-bracket tags and `{#if}`/`{#for}` tokens break template *prose* but are safe inside JS template strings — recorded gotcha).
 
 Adding a piece's demo surface = the copied file(s) + a `*Doc.pzl` page + a `nav.js` entry + a `routes.js` entry. Untracked new pages do NOT ride along in another session's refactor commits — re-check against the current exemplar before shipping.

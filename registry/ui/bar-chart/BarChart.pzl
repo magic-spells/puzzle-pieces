@@ -73,7 +73,7 @@
   </figure>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import {
   niceDomain,
@@ -401,4 +401,4 @@ export default class BarChart extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

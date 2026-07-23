@@ -88,7 +88,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import DataTable from '@/components/ui/DataTable.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -213,4 +213,4 @@ export default class DataTableDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

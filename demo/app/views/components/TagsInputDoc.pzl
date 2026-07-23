@@ -125,7 +125,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import TagsInput from '@/components/ui/TagsInput.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -239,4 +239,4 @@ export default class TagsInputDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

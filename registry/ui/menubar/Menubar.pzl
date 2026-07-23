@@ -61,7 +61,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Menubar — a desktop-application-style horizontal menu bar (File / Edit / View /
@@ -477,4 +477,4 @@ export default class Menubar extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

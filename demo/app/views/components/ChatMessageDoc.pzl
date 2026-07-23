@@ -72,7 +72,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ChatMessage from '@/components/ui/ChatMessage.pzl';
 import ChatAttachment from '@/components/ui/ChatAttachment.pzl';
@@ -149,4 +149,4 @@ export default class ChatMessageDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

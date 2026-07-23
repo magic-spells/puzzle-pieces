@@ -64,7 +64,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Empty from '@/components/ui/Empty.pzl';
 import Button from '@/components/ui/Button.pzl';
@@ -123,4 +123,4 @@ export default class EmptyDoc extends PuzzleView {
     create: () => toast({ title: 'Project created', message: 'Your first project is ready.', variant: 'success' }),
   };
 }
-</scripts>
+</script>

@@ -9,7 +9,7 @@
   </button>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Toggle — a two-state <button aria-pressed>: a TOOL state (bold/italic in a
@@ -88,4 +88,4 @@ export default class Toggle extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

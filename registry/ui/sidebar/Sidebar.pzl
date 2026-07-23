@@ -144,7 +144,7 @@
   </nav>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Sidebar — a config-first app-shell navigation rail done the Puzzle way: ONE
@@ -466,4 +466,4 @@ export default class Sidebar extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

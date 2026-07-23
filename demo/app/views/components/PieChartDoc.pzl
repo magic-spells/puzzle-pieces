@@ -60,7 +60,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import PieChart from '@/components/ui/PieChart.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -139,4 +139,4 @@ export default class PieChartDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

@@ -24,7 +24,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ChatScroller — a stick-to-bottom message viewport, the container a chat log
@@ -163,4 +163,4 @@ export default class ChatScroller extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

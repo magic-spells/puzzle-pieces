@@ -107,7 +107,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Dropzone from '@/components/ui/Dropzone.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -219,4 +219,4 @@ export default class DropzoneDoc extends PuzzleView {
       toast({ message: rejections[0].message, variant: 'danger' }),
   };
 }
-</scripts>
+</script>

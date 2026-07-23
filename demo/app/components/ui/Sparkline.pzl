@@ -24,7 +24,7 @@
   </svg>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { extent, linearScale, linePath, areaPath } from '../../lib/chart-math.js';
 
@@ -86,4 +86,4 @@ export default class Sparkline extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

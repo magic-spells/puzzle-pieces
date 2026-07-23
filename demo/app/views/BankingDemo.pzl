@@ -315,7 +315,7 @@
   </Dialog>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Sidebar from '../components/ui/Sidebar.pzl';
 import StatCard from '../components/ui/StatCard.pzl';
@@ -705,4 +705,4 @@ export default class BankingDemo extends PuzzleView {
     noop: () => {},
   };
 }
-</scripts>
+</script>

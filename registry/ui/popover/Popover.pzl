@@ -25,7 +25,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Popover — a click-toggled floating panel with arbitrary content. Follows the
@@ -187,4 +187,4 @@ export default class Popover extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

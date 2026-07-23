@@ -6,7 +6,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // AspectRatio — constrains slotted content to a fixed width:height ratio while
@@ -62,4 +62,4 @@ export default class AspectRatio extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

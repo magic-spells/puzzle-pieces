@@ -16,7 +16,7 @@
   </span>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Tooltip — a hover/focus text hint that WRAPS its target (the default <Slot/>,
@@ -194,4 +194,4 @@ export default class Tooltip extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

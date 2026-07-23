@@ -84,7 +84,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ContextMenu from '@/components/ui/ContextMenu.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -180,4 +180,4 @@ export default class ContextMenuDoc extends PuzzleView {
     onSelect: (value) => toast({ message: 'Menu: ' + value }),
   };
 }
-</scripts>
+</script>

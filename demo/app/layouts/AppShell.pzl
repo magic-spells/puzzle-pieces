@@ -49,7 +49,7 @@
   <Toaster position="bottom-right"/>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Toaster from '../components/ui/Toaster.pzl';
 
@@ -86,4 +86,4 @@ export default class AppShell extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

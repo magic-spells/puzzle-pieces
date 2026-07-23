@@ -62,7 +62,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Switch from '@/components/ui/Switch.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -124,4 +124,4 @@ export default class SwitchDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

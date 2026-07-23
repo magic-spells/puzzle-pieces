@@ -9,7 +9,7 @@
   </dl>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // DescriptionList — a semantic key-value list (<dl>/<dt>/<dd>) rendered from an
@@ -82,4 +82,4 @@ export default class DescriptionList extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

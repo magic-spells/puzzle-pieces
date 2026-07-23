@@ -63,7 +63,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ToggleGroup from '@/components/ui/ToggleGroup.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -148,4 +148,4 @@ export default class ToggleGroupDoc extends PuzzleView {
     setMarks: (v) => this.setData('marks', v),
   };
 }
-</scripts>
+</script>

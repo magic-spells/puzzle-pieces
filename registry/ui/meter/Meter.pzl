@@ -19,7 +19,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Meter — a semantic gauge (role="meter") for a MEASURED value within a range,
@@ -127,4 +127,4 @@ export default class Meter extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

@@ -107,7 +107,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import DateRangePicker from '@/components/ui/DateRangePicker.pzl';
 import Button from '@/components/ui/Button.pzl';
@@ -253,4 +253,4 @@ export default class DateRangePickerDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

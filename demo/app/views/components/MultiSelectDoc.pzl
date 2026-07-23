@@ -130,7 +130,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import MultiSelect from '@/components/ui/MultiSelect.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -287,4 +287,4 @@ export default class MultiSelectDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

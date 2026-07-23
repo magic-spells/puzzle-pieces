@@ -60,7 +60,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import AvatarGroup from '@/components/ui/AvatarGroup.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -145,4 +145,4 @@ export default class AvatarGroupDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

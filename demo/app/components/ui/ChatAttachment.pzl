@@ -45,7 +45,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ChatAttachment — a file chip for message attachments and upload previews: a
@@ -159,4 +159,4 @@ export default class ChatAttachment extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

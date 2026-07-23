@@ -22,7 +22,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Alert — an inline callout. Variants are plain lookup maps composed into one
@@ -61,4 +61,4 @@ export default class Alert extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

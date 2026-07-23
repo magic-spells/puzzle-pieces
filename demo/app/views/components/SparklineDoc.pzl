@@ -64,7 +64,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Sparkline from '@/components/ui/Sparkline.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -115,4 +115,4 @@ export default class SparklineDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

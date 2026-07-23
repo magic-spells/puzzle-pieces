@@ -19,7 +19,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Card — a presentational container matching the demo's section-card styling
@@ -63,4 +63,4 @@ export default class Card extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

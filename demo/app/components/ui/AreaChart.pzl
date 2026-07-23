@@ -117,7 +117,7 @@
   </figure>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { extent, niceDomain, linearScale, bandScale, linePath, areaPath, stackSeries, formatTick } from '../../lib/chart-math.js';
 
@@ -428,4 +428,4 @@ export default class AreaChart extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

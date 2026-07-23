@@ -55,7 +55,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Alert from '@/components/ui/Alert.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -97,4 +97,4 @@ export default class AlertDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

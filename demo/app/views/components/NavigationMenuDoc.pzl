@@ -79,7 +79,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import NavigationMenu from '@/components/ui/NavigationMenu.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -200,4 +200,4 @@ export default class NavigationMenuDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

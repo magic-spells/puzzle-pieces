@@ -43,7 +43,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ProgressRing — a determinate circular progress indicator: an SVG ring with a
@@ -129,4 +129,4 @@ export default class ProgressRing extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

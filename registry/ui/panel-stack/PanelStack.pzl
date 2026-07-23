@@ -8,7 +8,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // PanelStack — controlled nested-panel navigation, ported from
@@ -212,4 +212,4 @@ export default class PanelStack extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

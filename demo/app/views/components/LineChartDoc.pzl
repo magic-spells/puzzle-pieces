@@ -97,7 +97,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import LineChart from '@/components/ui/LineChart.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -187,4 +187,4 @@ export default class LineChartDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

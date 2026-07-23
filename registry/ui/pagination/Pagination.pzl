@@ -51,7 +51,7 @@
   </nav>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Pagination — controlled page navigator. The parent owns `page` (1-based) and
@@ -208,4 +208,4 @@ export default class Pagination extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

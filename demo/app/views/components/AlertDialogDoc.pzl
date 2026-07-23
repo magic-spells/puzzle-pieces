@@ -58,7 +58,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Button from '@/components/ui/Button.pzl';
 import AlertDialog from '@/components/ui/AlertDialog.pzl';
@@ -137,4 +137,4 @@ export default class AlertDialogDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

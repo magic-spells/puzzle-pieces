@@ -29,7 +29,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Toolbar — a WAI-ARIA `role="toolbar"` container that groups related controls
@@ -278,4 +278,4 @@ export default class Toolbar extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

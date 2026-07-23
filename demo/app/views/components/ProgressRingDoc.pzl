@@ -105,7 +105,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import ProgressRing from '@/components/ui/ProgressRing.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -171,4 +171,4 @@ export default class ProgressRingDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

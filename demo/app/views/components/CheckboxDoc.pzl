@@ -48,7 +48,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Checkbox from '@/components/ui/Checkbox.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -108,4 +108,4 @@ export default class CheckboxDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

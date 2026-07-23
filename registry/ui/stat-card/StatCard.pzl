@@ -35,7 +35,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { formatTick } from '../../lib/chart-math.js';
 import Sparkline from './Sparkline.pzl';
@@ -110,4 +110,4 @@ export default class StatCard extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

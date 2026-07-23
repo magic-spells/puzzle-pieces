@@ -22,7 +22,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Progress — a determinate (or indeterminate) progress bar. Pass a numeric
@@ -69,4 +69,4 @@ export default class Progress extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

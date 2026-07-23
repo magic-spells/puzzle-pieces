@@ -2,7 +2,7 @@
   <Code code={ code } lang={ lang } numbers={ false } class={ klass }/>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Code from '../ui/Code.pzl';
 
@@ -22,4 +22,4 @@ export default class CodeBlock extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

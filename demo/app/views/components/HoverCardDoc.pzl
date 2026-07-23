@@ -108,7 +108,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import HoverCard from '@/components/ui/HoverCard.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -195,4 +195,4 @@ export default class HoverCardDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -70,7 +70,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { MorphEngine } from '@magic-spells/morph-engine';
 import Calendar from './Calendar.pzl';
@@ -529,4 +529,4 @@ export default class DatePicker extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -44,7 +44,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ContextMenu — a right-click menu built on DropdownMenu's guts. The items schema,
@@ -318,4 +318,4 @@ export default class ContextMenu extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

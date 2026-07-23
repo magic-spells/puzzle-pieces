@@ -91,7 +91,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import InputOtp from '@/components/ui/InputOtp.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -185,4 +185,4 @@ export default class InputOtpDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

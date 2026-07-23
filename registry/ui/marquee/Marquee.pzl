@@ -14,7 +14,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Marquee — a continuously scrolling ticker of content (logos, announcements,
@@ -42,7 +42,7 @@ import { PuzzleView } from '@magic-spells/puzzle';
 // scrolling-content web component uses.
 //
 // This gives pause-on-hover and drag-to-scroll for free (both just stop/adjust the
-// same offset), and it needs nothing added to pieces.css / any <styles> block.
+// same offset), and it needs nothing added to pieces.css / any <style> block.
 //
 // Props
 //   direction     'left' (default) | 'right' | 'up' | 'down' — scroll direction
@@ -332,4 +332,4 @@ export default class Marquee extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

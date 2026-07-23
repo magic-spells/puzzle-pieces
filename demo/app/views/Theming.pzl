@@ -110,7 +110,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import CodeBlock from '@/components/docs/CodeBlock.pzl';
 import Toc from '@/components/docs/Toc.pzl';
@@ -241,4 +241,4 @@ export default class Theming extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

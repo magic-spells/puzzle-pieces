@@ -84,16 +84,16 @@ Rules that follow from this:
   `registry/theme/pieces.css` (`bg-surface`, `text-ink`, `border-border`, `bg-brand`,
   `text-danger`, …). **No hex colors** inside components. `pieces.css` is a registry file —
   editing token VALUES there changes every consumer.
-- **No `<styles>` blocks. No custom elements / `customElements.define`.** Pieces compile to
+- **No `<style>` blocks. No custom elements / `customElements.define`.** Pieces compile to
   plain semantic HTML with ARIA and Tailwind classes. **The one sanctioned exception is
   `code`** — highlight.js generates its `.hljs-*` class names at RUNTIME and injects them
   with `innerHTML`, so they can never be Tailwind utilities and Tailwind's scan can never
   see them. That block is deliberately unscoped (a `scoped` block wraps the CSS in
   `@scope ([data-<hash>])` keyed to a stamp on the template root — the injected spans are
   inside that root, so scoping would in fact still match, but global keeps the piece
-  independent of the stamp). Reach for `<styles>` ONLY when class names are machine-
+  independent of the stamp). Reach for `<style>` ONLY when class names are machine-
   generated; anything you can express as a utility must stay a utility.
-  Note `@apply` does NOT work inside `<styles>` — Tailwind never processes that text, so
+  Note `@apply` does NOT work inside `<style>` — Tailwind never processes that text, so
   the rule survives literally into the bundle and the browser silently drops it. Raw
   properties and `var(--…)` are fine.
 - **One exported `PuzzleView` per file**, PascalCase filename, single root element.
@@ -131,7 +131,7 @@ Rules that follow from this:
 - **Literal angle-bracket tag names and literal `{#if}` / `{#for}` tokens break template
   PROSE** (the compiler tries to parse them). They are fine inside JS template-literal
   strings — which is exactly why docs code samples live as template-literal consts in a
-  view's `<scripts>`.
+  view's `<script>`.
 - **ExampleBox / demo frames must NOT be `overflow-hidden`** — it clips opened popovers,
   tooltips, and dropdowns. Let the code area clip itself instead.
 - **Slot targeting is direct-children-only and compile-time.** A `slot="name"` element

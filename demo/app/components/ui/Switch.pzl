@@ -23,7 +23,7 @@
   </label>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Switch — a toggle built on a real <input type="checkbox"> restyled with
@@ -73,4 +73,4 @@ export default class Switch extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

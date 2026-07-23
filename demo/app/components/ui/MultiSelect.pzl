@@ -114,7 +114,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // MultiSelect — a filterable tag / multi-value combobox: the multi-value sibling
@@ -845,4 +845,4 @@ export default class MultiSelect extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

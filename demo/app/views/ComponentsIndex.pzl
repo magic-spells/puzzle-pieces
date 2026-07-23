@@ -22,7 +22,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { COMPONENTS } from '../docs/nav.js';
 
@@ -33,4 +33,4 @@ export default class ComponentsIndex extends PuzzleView {
     return { components: COMPONENTS };
   }
 }
-</scripts>
+</script>

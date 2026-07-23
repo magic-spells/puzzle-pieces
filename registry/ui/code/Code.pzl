@@ -45,19 +45,19 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { highlight } from '../../lib/highlight.js';
 
 // Code — a complete code panel in one piece: syntax highlighting (highlight.js
-// via lib/highlight.js, GitHub light/dark palette from the .hljs-* <styles>
+// via lib/highlight.js, GitHub light/dark palette from the .hljs-* <style>
 // block at the bottom of this file), an optional line-number gutter, a corner
 // copy button, and an optional collapsed "View Code" preview that animates
 // open. Hand it a snippet string and it takes care of the rest.
 //
 // Requires: npm install highlight.js (declared in piece.json) plus the
 // lib/highlight.js registry file. The syntax-token CSS travels with this file
-// — the only piece that carries a <styles> block, because highlight.js
+// — the only piece that carries a <style> block, because highlight.js
 // generates its class names at runtime so they can't be Tailwind utilities.
 //
 //   <Code code={ snippet }/>                            framed, numbers, copy
@@ -222,9 +222,9 @@ export default class Code extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>
 
-<styles>
+<style>
 /*
  * Syntax tokens for the highlight.js classes that lib/highlight.js emits.
  * GitHub Light / GitHub Dark, swapped through `light-dark()` like the
@@ -302,4 +302,4 @@ export default class Code extends PuzzleView {
 .hljs-attr.directive_ {
   color: var(--hl-directive);
 }
-</styles>
+</style>

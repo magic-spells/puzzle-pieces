@@ -15,7 +15,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Empty — an empty-state block for "no results / nothing here yet" moments.
@@ -56,4 +56,4 @@ export default class Empty extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

@@ -45,7 +45,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Popconfirm — a lightweight inline confirmation popover anchored to a trigger, for
@@ -327,4 +327,4 @@ export default class Popconfirm extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

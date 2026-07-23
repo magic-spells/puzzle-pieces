@@ -170,7 +170,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Tree from '@/components/ui/Tree.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -334,4 +334,4 @@ export default class TreeDoc extends PuzzleView {
     onSelect3: (id) => { this.setData({ selected3: id }); this.refresh(); },
   };
 }
-</scripts>
+</script>

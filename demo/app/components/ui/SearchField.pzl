@@ -34,7 +34,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // SearchField — a type="search" input with a leading (decorative) magnifier and
@@ -87,4 +87,4 @@ export default class SearchField extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

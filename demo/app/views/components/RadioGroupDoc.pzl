@@ -47,7 +47,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import RadioGroup from '@/components/ui/RadioGroup.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -140,4 +140,4 @@ export default class RadioGroupDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

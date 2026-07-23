@@ -127,7 +127,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import TimePicker from '@/components/ui/TimePicker.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -244,4 +244,4 @@ export default class TimePickerDoc extends PuzzleView {
     setStartTime: (value) => this.setData('startTime', value),
   };
 }
-</scripts>
+</script>

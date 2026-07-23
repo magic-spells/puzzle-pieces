@@ -36,7 +36,7 @@
   </dialog>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Sheet — a bottom sheet with drag-to-dismiss, built on the native <dialog>
@@ -467,4 +467,4 @@ export default class Sheet extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

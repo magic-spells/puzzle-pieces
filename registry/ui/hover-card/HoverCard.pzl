@@ -25,7 +25,7 @@
   </span>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // HoverCard — Popover's hover/focus-triggered cousin, for supplementary previews
@@ -294,4 +294,4 @@ export default class HoverCard extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

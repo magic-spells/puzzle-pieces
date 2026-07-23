@@ -82,7 +82,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { MorphEngine } from '@magic-spells/morph-engine';
 import { EMOJI_GROUPS } from '../../lib/emoji-data.js';
@@ -594,4 +594,4 @@ export default class EmojiPickerSimple extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

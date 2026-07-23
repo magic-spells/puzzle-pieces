@@ -28,7 +28,7 @@
   </label>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // Checkbox — a real <input type="checkbox"> restyled with appearance-none, so
@@ -69,4 +69,4 @@ export default class Checkbox extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

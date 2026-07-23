@@ -97,7 +97,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import DatePicker from '@/components/ui/DatePicker.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -193,4 +193,4 @@ export default class DatePickerDoc extends PuzzleView {
     setFmtDate: (iso) => this.setData('fmtDate', iso),
   };
 }
-</scripts>
+</script>

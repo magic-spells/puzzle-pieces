@@ -52,7 +52,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import StatCard from '../components/ui/StatCard.pzl';
 import LineChart from '../components/ui/LineChart.pzl';
@@ -115,4 +115,4 @@ export default class AnalyticsDemo extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

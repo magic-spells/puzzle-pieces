@@ -63,7 +63,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Popover from '@/components/ui/Popover.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -107,4 +107,4 @@ export default class PopoverDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

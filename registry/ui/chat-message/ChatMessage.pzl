@@ -33,7 +33,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // ChatMessage — one message row in a chat log: avatar, author/time meta, and a
@@ -141,4 +141,4 @@ export default class ChatMessage extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>

@@ -42,7 +42,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import { getToasts, subscribe, dismiss, pauseAll, resumeAll } from './toast.js';
 
@@ -128,4 +128,4 @@ export default class Toaster extends PuzzleView {
     resumeTimers: () => resumeAll(),
   };
 }
-</scripts>
+</script>

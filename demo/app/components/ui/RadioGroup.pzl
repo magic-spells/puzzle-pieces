@@ -29,7 +29,7 @@
   </fieldset>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 // RadioGroup — config-first: one component renders the whole group from an
@@ -77,4 +77,4 @@ export default class RadioGroup extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

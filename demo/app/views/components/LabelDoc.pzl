@@ -52,7 +52,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Label from '@/components/ui/Label.pzl';
 import SearchField from '@/components/ui/SearchField.pzl';
@@ -101,4 +101,4 @@ export default class LabelDoc extends PuzzleView {
     setQuery: (v) => this.setData('query', v),
   };
 }
-</scripts>
+</script>

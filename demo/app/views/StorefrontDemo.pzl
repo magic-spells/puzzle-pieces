@@ -239,7 +239,7 @@
   </article>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Marquee from '../components/ui/Marquee.pzl';
 import Breadcrumb from '../components/ui/Breadcrumb.pzl';
@@ -473,4 +473,4 @@ export default class StorefrontDemo extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

@@ -100,7 +100,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Button from '@/components/ui/Button.pzl';
 import Dialog from '@/components/ui/Dialog.pzl';
@@ -201,4 +201,4 @@ export default class DialogDoc extends PuzzleView {
     },
   };
 }
-</scripts>
+</script>

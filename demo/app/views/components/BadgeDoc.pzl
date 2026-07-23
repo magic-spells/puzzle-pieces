@@ -59,7 +59,7 @@
   </div>
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 import Badge from '@/components/ui/Badge.pzl';
 import ExampleBox from '@/components/docs/ExampleBox.pzl';
@@ -103,4 +103,4 @@ export default class BadgeDoc extends PuzzleView {
     };
   }
 }
-</scripts>
+</script>
