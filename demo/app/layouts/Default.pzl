@@ -8,6 +8,21 @@
       </a>
       <div class="flex items-center gap-4">
         <span class="text-xs text-muted">{ pieceCount } pieces · v0.1</span>
+        <DropdownMenu
+          label="Color scheme"
+          align="end"
+          items={ schemeItems }
+          triggerClass="h-auto! rounded-md! border-0! bg-transparent! p-1.5! text-muted! hover:border-transparent! hover:bg-surface-sunken! hover:text-ink! outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          @select={ setScheme }>
+          <span slot="trigger" class="flex items-center" aria-label="Color scheme">
+            <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="13.5" cy="6.5" r="2.5" />
+              <circle cx="17.5" cy="11.5" r="2.5" />
+              <circle cx="8.5" cy="7.5" r="2.5" />
+              <path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.2a2 2 0 0 1-1.8-2.8l.4-.9A2.4 2.4 0 0 0 14.2 3H12z" />
+            </svg>
+          </span>
+        </DropdownMenu>
         <button
           type="button"
           aria-label={ themeLabel }
@@ -71,8 +86,22 @@
 import { PuzzleView } from '@magic-spells/puzzle';
 import Toaster from '../components/ui/Toaster.pzl';
 import Collapsible from '../components/ui/Collapsible.pzl';
+import DropdownMenu from '../components/ui/DropdownMenu.pzl';
 import SideNav from '../components/docs/SideNav.pzl';
 import { COMPONENTS } from '../docs/nav.js';
+
+const SCHEMES = [
+  { label: 'Default', value: 'default' },
+  { label: 'Claw', value: 'claw' },
+  { label: 'Void', value: 'void' },
+  { label: 'Dim', value: 'dim' },
+];
+
+const schemeItems = (active) =>
+  SCHEMES.map((scheme) => ({
+    ...scheme,
+    label: `${scheme.value === active ? '✓ ' : ''}${scheme.label}`,
+  }));
 
 // Docs shell: sticky blurred header (brand only — the sidebar owns navigation),
 // a 240px sticky component nav from lg: up, and the same nav inside a
@@ -92,10 +121,18 @@ export default class DefaultLayout extends PuzzleView {
     const darkMode = explicit
       ? explicit === 'dark'
       : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const explicitScheme =
+      typeof document !== 'undefined' && document.documentElement.dataset.scheme;
+    const scheme =
+      explicitScheme === 'claw' || explicitScheme === 'void' || explicitScheme === 'dim'
+        ? explicitScheme
+        : 'default';
     return {
       path,
       pieceCount: COMPONENTS.length,
       mobileNavOpen: !!this.getData().mobileNavOpen,
+      scheme,
+      schemeItems: schemeItems(scheme),
       darkMode,
       lightMode: !darkMode,
       themeLabel: darkMode ? 'Switch to light mode' : 'Switch to dark mode',
@@ -105,6 +142,21 @@ export default class DefaultLayout extends PuzzleView {
   events = {
     setMobileNavOpen: (open) => {
       this.setData({ mobileNavOpen: open });
+      this.refresh();
+    },
+    setScheme: (scheme) => {
+      const next =
+        scheme === 'claw' || scheme === 'void' || scheme === 'dim' ? scheme : 'default';
+      if (typeof document !== 'undefined') {
+        if (next === 'default') delete document.documentElement.dataset.scheme;
+        else document.documentElement.dataset.scheme = next;
+      }
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('pieces-scheme', next);
+        } catch (e) {}
+      }
+      this.setData({ scheme: next, schemeItems: schemeItems(next) });
       this.refresh();
     },
     toggleTheme: () => {

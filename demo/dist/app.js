@@ -1660,7 +1660,8 @@ var PuzzleValidationError = class extends Error {
 function fieldErrors(field, def, value) {
   const errors = [];
   const missing = value === void 0 || value === null || value === "";
-  if (def.required && missing) {
+  const autoGeneratablePrimary = def.primary && (value === void 0 || value === null);
+  if (def.required && missing && !autoGeneratablePrimary) {
     errors.push({
       field,
       rule: "required",
@@ -1739,7 +1740,7 @@ function resolveDefault(value) {
   return value;
 }
 var POLLUTION_SKIP = /* @__PURE__ */ new Set(["__proto__", "constructor", "prototype"]);
-var MERGE_SKIP = /* @__PURE__ */ new Set([...POLLUTION_SKIP, "_store", "_type", "_synced"]);
+var MERGE_SKIP = /* @__PURE__ */ new Set([...POLLUTION_SKIP, "_store", "_type", "_synced", "_deleted"]);
 function assignSkipping(target, src, skipSet) {
   for (const key of Object.keys(src)) {
     if (skipSet.has(key))
@@ -1767,6 +1768,11 @@ var PuzzleModel = class {
       enumerable: false
     });
     Object.defineProperty(this, "_synced", {
+      value: false,
+      writable: true,
+      enumerable: false
+    });
+    Object.defineProperty(this, "_deleted", {
       value: false,
       writable: true,
       enumerable: false
@@ -1841,12 +1847,13 @@ var PuzzleModel = class {
     return errors;
   }
   /**
-   * Validate a data object against ALL schema-declared fields, without
-   * throwing — the pre-create form-check surface (constellation/doc/DOC-SPEC.md §20, D48).
+   * Validate a data object without throwing — the pre-create form-check surface
+   * (constellation/doc/DOC-SPEC.md §20, D48). `options.fields` exposes the same
+   * partial-field machinery used by update(); omitted means every declared field.
    * @returns {{ valid: boolean, errors: Array<{field, rule, message}> }}
    */
-  static validate(data = {}) {
-    const errors = this._collectErrors(data);
+  static validate(data = {}, { fields } = {}) {
+    const errors = this._collectErrors(data, fields);
     return { valid: errors.length === 0, errors };
   }
   /**
@@ -1888,11 +1895,15 @@ var PuzzleModel = class {
    * Sync this record to the server (constellation/doc/DOC-SPEC.md §22, D50). The
    * Store owns the network; the verb just delegates. Local-first: the mutation is
    * already on screen, so a failed save() rejects and keeps the dirty local state
-   * (retry by calling again). A store-less record has nowhere to sync — reject
-   * asynchronously (never a sync throw) so callers only ever `await`.
+   * (retry by calling again). A deleted record cannot be resurrected through this
+   * verb; any other store-less record has nowhere to sync. Both reject asynchronously
+   * (never a sync throw) so callers only ever `await`.
    * @returns {Promise<PuzzleModel>}
    */
   save() {
+    if (this._deleted) {
+      return Promise.reject(new Error("[puzzle] cannot save a deleted record"));
+    }
     if (!this._store) {
       return Promise.reject(
         new Error("[puzzle] cannot save() a store-less record \u2014 create it via store.createRecord() first")
@@ -1902,14 +1913,16 @@ var PuzzleModel = class {
   }
   /**
    * Confirmed server delete (constellation/doc/DOC-SPEC.md §22, D50): DELETE first,
-   * local remove on ack. Distinct from destroy() (local-only, unchanged). Reject
-   * asynchronously for a store-less record.
+   * local remove on ack. Distinct from destroy() (local-only). A removed instance
+   * resolves idempotently; a never-added instance still rejects asynchronously.
    * @returns {Promise<PuzzleModel>}
    */
   delete() {
+    if (this._deleted)
+      return Promise.resolve(this);
     if (!this._store) {
       return Promise.reject(
-        new Error("[puzzle] cannot delete() a store-less record \u2014 create it via store.createRecord() first")
+        new Error("[puzzle] cannot delete() a record that was never added to a store")
       );
     }
     return this._store.deleteRecord(this);
@@ -2132,13 +2145,14 @@ var Store = class {
     this._notify(type, record[this.modelFor(type).primaryKey()]);
     this._persist();
   }
-  /** Called by PuzzleModel.destroy() — removes FIRST, then notifies. */
+  /** Called by PuzzleModel.destroy()/confirmed delete() — removes FIRST, then notifies. */
   removeRecord(record) {
     const type = record._type;
     if (!type)
       return;
     const id = record[this.modelFor(type).primaryKey()];
     this._typeMap(type).delete(id);
+    record._deleted = true;
     record._store = null;
     this._notify(type, id);
     this._persist();
@@ -2175,6 +2189,36 @@ var Store = class {
     this._persist();
     return record;
   }
+  /**
+   * Merge server-authoritative data into the Store without another GET (D21/D50).
+   * This is the public companion to request() for custom-action responses: existing
+   * records update in place; new records instantiate validation-exempt and synced.
+   *
+   * Every payload must be a JSON-object shape with an explicit primary key. The pk
+   * guard is load-bearing: private _upsert would otherwise generate an id and mark
+   * the phantom record synced, making its next save() PUT to a nonsense URL. Arrays
+   * preflight every element before mutation, then persist once for the whole batch.
+   */
+  upsert(type, objectOrArray) {
+    const isArray = Array.isArray(objectOrArray);
+    const list = isArray ? objectOrArray : [objectOrArray];
+    const pk = this.modelFor(type).primaryKey();
+    for (const data of list) {
+      if (data == null || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error(
+          isArray ? `[puzzle] upsert('${type}') expected an array of JSON objects` : `[puzzle] upsert('${type}') expected a JSON object`
+        );
+      }
+      if (data[pk] == null) {
+        throw new Error(
+          `[puzzle] upsert('${type}') requires primary key "${pk}" on every record`
+        );
+      }
+    }
+    const records = list.map((data) => this._upsert(type, data));
+    this._persist();
+    return isArray ? records : records[0];
+  }
   async _fetchAdapter(type, suffix) {
     const endpoint = this.modelFor(type).adapter?.endpoint;
     if (!endpoint) {
@@ -2188,7 +2232,7 @@ var Store = class {
     }
     return res.json();
   }
-  /** Create or update-in-place by primary key; notifies either way. */
+  /** Create or update-in-place by primary key; notifies either way. Public callers use upsert(). */
   _upsert(type, data) {
     const pk = this.modelFor(type).primaryKey();
     const existing = data?.[pk] != null ? this._typeMap(type).get(data[pk]) : null;
@@ -2964,6 +3008,81 @@ function warnOnceForSpec(spec, message) {
 function noop2() {
 }
 
+// node_modules/@magic-spells/puzzle/client-runtime/head.js
+var HEAD_FIELDS = ["title", "description", "canonical", "socialImage"];
+var MANAGED_TAGS = [
+  { id: "og:title", field: "title", tag: "meta", attr: "property", name: "og:title" },
+  { id: "twitter:title", field: "title", tag: "meta", attr: "name", name: "twitter:title" },
+  { id: "description", field: "description", tag: "meta", attr: "name", name: "description" },
+  { id: "og:description", field: "description", tag: "meta", attr: "property", name: "og:description" },
+  {
+    id: "twitter:description",
+    field: "description",
+    tag: "meta",
+    attr: "name",
+    name: "twitter:description"
+  },
+  { id: "canonical", field: "canonical", tag: "link" },
+  { id: "og:url", field: "canonical", tag: "meta", attr: "property", name: "og:url" },
+  { id: "og:image", field: "socialImage", tag: "meta", attr: "property", name: "og:image" },
+  { id: "twitter:image", field: "socialImage", tag: "meta", attr: "name", name: "twitter:image" },
+  {
+    id: "twitter:card",
+    field: "socialImage",
+    tag: "meta",
+    attr: "name",
+    name: "twitter:card",
+    fixed: "summary_large_image"
+  }
+];
+function resolveHead(chain) {
+  const out = {};
+  for (const field of HEAD_FIELDS) {
+    out[field] = resolveField(chain, field);
+  }
+  return out;
+}
+function resolveField(chain, field) {
+  for (let i2 = chain.length - 1; i2 >= 0; i2--) {
+    const meta = chain[i2].meta;
+    if (meta && meta[field] !== void 0)
+      return meta[field];
+  }
+  return null;
+}
+function syncHead(resolved) {
+  if (resolved.title != null)
+    document.title = String(resolved.title);
+  const head = document.head;
+  for (const spec of MANAGED_TAGS) {
+    const value = resolved[spec.field];
+    const existing = head.querySelector(`[data-puzzle-head="${spec.id}"]`);
+    if (value == null) {
+      if (existing)
+        existing.remove();
+      continue;
+    }
+    const content = spec.fixed ?? String(value);
+    if (existing && existing.tagName.toLowerCase() === spec.tag) {
+      setTagValue(existing, spec, content);
+    } else {
+      if (existing)
+        existing.remove();
+      const el = document.createElement(spec.tag);
+      el.setAttribute("data-puzzle-head", spec.id);
+      if (spec.tag === "link")
+        el.setAttribute("rel", "canonical");
+      else
+        el.setAttribute(spec.attr, spec.name);
+      setTagValue(el, spec, content);
+      head.appendChild(el);
+    }
+  }
+}
+function setTagValue(el, spec, content) {
+  el.setAttribute(spec.tag === "link" ? "href" : "content", content);
+}
+
 // node_modules/@magic-spells/puzzle/client-runtime/router/router.js
 var SCROLL_STORE_KEY = "__puzzleScroll";
 var SCROLL_MAX_ENTRIES = 50;
@@ -2977,6 +3096,12 @@ var Router = class {
   // { path, entry, params, views: [v0..vN], layout, layoutClass } | null
   #state = null;
   #token = 0;
+  // Guard redirects re-enter the normal pipeline through replace(), so every
+  // destination gets its own inherited guard chain and the denied URL never
+  // commits. A bad pair/cycle could otherwise recurse forever without reaching
+  // #commitState; count consecutive guard-owned redirects and reset only when a
+  // navigation actually commits (D87).
+  #guardRedirectCount = 0;
   // The instance an in-flight transition is currently animating OUT (or null).
   // A newer navigation reads this to cancel the running out and proceed
   // immediately (constellation/doc/DOC-SPEC.md §12 interruption rule).
@@ -2998,7 +3123,8 @@ var Router = class {
   // #navigate: it would read the stale #state as `cur`, compute its reuse
   // prefix against the OLD chain, and double-mount the shared layout (the
   // pyramid-puzzle redirect-from-mounted bug). Such a push is DEFERRED — its
-  // target recorded (last-wins, single slot) and run via #navigate the instant
+  // target recorded as { path, replace } (last-wins, single slot — a replace()
+  // arriving in the window shares the slot, D83) and re-dispatched the instant
   // the in-flight commit completes and #state is consistent. No await runs
   // inside the window, so only a synchronous reentrant push can land while the
   // flag is set; a push arriving during the async LOAD or out-animation phases
@@ -3021,8 +3147,8 @@ var Router = class {
   // (constellation/doc/DOC-SPEC.md §26). #defaultTransitionMode is the constructor
   // option — the FALLBACK tier once nothing more specific applies (#resolveTransitionMode
   // below): a route-chain node's own `transitionMode` field wins first (nearest-
-  // defined, leaf→root, same walk as #setTitle's meta.title), then the incoming
-  // animator VIEW/LAYOUT instance's own `transitionMode` field, then this default.
+  // defined, leaf→root, same walk as #syncHead's per-field meta head resolution),
+  // then the incoming animator VIEW/LAYOUT instance's own `transitionMode` field, then this default.
   // Resolution is DESTINATION-ONLY — the outgoing view/route is never consulted
   // (D65): the card coming in always controls the transition. Gates ONLY the
   // #swap out/in sequencing — every other path (matching, commit, interruption,
@@ -3084,7 +3210,7 @@ var Router = class {
   #keySeq = 0;
   #prevScrollRestoration = null;
   /**
-   * @param {Array<{path,name,view,layout,meta,transitionMode,children}>} routes route definitions
+   * @param {Array<{path,name,view,layout,meta,guard,transitionMode,children}>} routes route definitions
    * @param {object} [options]
    * @param {false|Function} [options.scrollBehavior] `false` to leave scroll
    *   alone; `(to, from, savedPosition) => {x,y}|null` to customize; omit for
@@ -3132,12 +3258,14 @@ var Router = class {
     for (const route of routes) {
       if (route.path === "*") {
         validateTransitionMode(route.transitionMode, "the catch-all route");
+        validateGuard(route.guard, "the catch-all route");
         this.#catchAll = {
           chain: [route],
           fullPaths: ["*"],
           regex: null,
           paramNames: [],
-          layout: route.layout ?? null
+          layout: route.layout ?? null,
+          guards: route.guard ? [route.guard] : []
         };
         continue;
       }
@@ -3255,6 +3383,7 @@ var Router = class {
     this.#stack = null;
     this.#index = -1;
     this.#pendingIndex = null;
+    this.#guardRedirectCount = 0;
     this.#positions.clear();
     this.#scrollKey = null;
     this.#committing = false;
@@ -3288,7 +3417,7 @@ var Router = class {
    */
   push(path) {
     if (this.#committing) {
-      this.#pendingPush = path;
+      this.#pendingPush = { path, replace: false };
       return Promise.resolve();
     }
     if (this.#state && sameNavKey(path) === sameNavKey(this.#state.path)) {
@@ -3297,16 +3426,44 @@ var Router = class {
     return this.#navigate(path, { push: true });
   }
   /**
-   * Run a push deferred during the commit window, now that #state/current are
-   * consistent (the just-committed chain is recorded). Fire-and-forget: the
-   * caller has already finished its own commit. Single slot — last writer wins.
+   * Programmatic navigation that REPLACES the current history entry (v1.49,
+   * D83). Runs the SAME match/load/cancellation/atomic-commit pipeline as
+   * push() — a failed or superseded replace touches neither URL nor view nor
+   * stack (D19/D61 inherited) — but #commitLocation swaps the entry in place:
+   * history.replaceState (hash mode '#'-encoded, base-prefixed like push) with
+   * the CURRENT entry's __puzzleScrollKey preserved, or in memory mode an
+   * in-place stack overwrite (length + index unchanged). Scroll is left alone
+   * by default (see #resolveScroll). Mirrors push()'s guards exactly: the
+   * same-path no-op (byte-identical query+hash, trailing-slash-insensitive
+   * pathname) and the commit-window deferral (a replace from a mounted() hook
+   * — the auth-redirect case that must not leave the aborted page in history).
+   */
+  replace(path) {
+    if (this.#committing) {
+      this.#pendingPush = { path, replace: true };
+      return Promise.resolve();
+    }
+    if (this.#state && sameNavKey(path) === sameNavKey(this.#state.path)) {
+      return Promise.resolve();
+    }
+    return this.#navigate(path, { push: false, replace: true });
+  }
+  /**
+   * Run a push/replace deferred during the commit window, now that
+   * #state/current are consistent (the just-committed chain is recorded).
+   * Fire-and-forget: the caller has already finished its own commit. Single
+   * slot — last writer wins.
    */
   #runPendingPush() {
     if (this.#pendingPush == null)
       return;
-    const path = this.#pendingPush;
+    const { path, replace } = this.#pendingPush;
     this.#pendingPush = null;
-    this.push(path);
+    if (replace) {
+      this.replace(path);
+    } else {
+      this.push(path);
+    }
   }
   /**
    * Programmatic history (v1.11, D42), all modes. Move `n` entries — negative =
@@ -3340,18 +3497,103 @@ var Router = class {
     return this.go(1);
   }
   /**
-   * Current route info: { path, route, params, chain } — null before the first
-   * nav. `route` is the LEAF node (back-compat shape); `chain` is the full
-   * root→leaf node list (v1.3 additive).
+   * Render-time inverse of the click interceptor / #currentPath parsing (v1.46,
+   * D79): a path-shaped route in, a mode-encoded href out — history `base + path`,
+   * hash `'#' + base + path`, memory the path unchanged (no URL carrier). The #base
+   * is used exactly as stored (D51 already normalized it — no re-normalization). A
+   * string NOT starting with '/' is returned unchanged: the deliberate pass-through
+   * for external URLs, `mailto:`/`tel:`, bare `#anchor` fragments, an already-encoded
+   * `'#/x'`, and `''`. Query strings and `#anchor` suffixes inside a path survive
+   * for free — this is pure prefixing and never parses them.
+   */
+  url(path) {
+    if (typeof path !== "string") {
+      throw new Error(`[puzzle] router.url(path) expects a string path (got ${typeof path})`);
+    }
+    if (path[0] !== "/")
+      return path;
+    if (this.#mode === "memory")
+      return path;
+    if (this.#mode === "hash")
+      return "#" + this.#base + path;
+    return this.#base + path;
+  }
+  /**
+   * Current route info: { path, pathname, query, hash, route, params, chain }
+   * — null before the first nav. `route` is the LEAF node (back-compat shape);
+   * `chain` is the full root→leaf node list (v1.3 additive). `pathname`/
+   * `query`/`hash` (v1.49, D83) are the parts parseLocation split off `path`
+   * at navigation time — read straight off #state, never reparsed here.
    */
   get current() {
     if (!this.#state)
       return null;
-    const { path, entry, params } = this.#state;
-    return { path, route: entry.chain[entry.chain.length - 1], params, chain: entry.chain };
+    const { path, pathname, query, hash, entry, params } = this.#state;
+    return {
+      path,
+      pathname,
+      query,
+      hash,
+      route: entry.chain[entry.chain.length - 1],
+      params,
+      chain: entry.chain
+    };
   }
   // ---- navigation pipeline (D19 / D30) ------------------------------------
-  async #navigate(rawPath, { push, pop = false, savedPosition = null, memoryIndex = null }) {
+  /**
+   * Run the destination's inherited guard chain root→leaf, sequentially (D87).
+   * Every guard is awaited even when it returns synchronously, then the token is
+   * checked BEFORE another guard may observe a superseded navigation. No view or
+   * layout exists yet, so a losing guard phase has no fresh instance teardown.
+   *
+   * @returns {Promise<true|false|string|null>} allow, block/failure, redirect,
+   *   or superseded (`null`)
+   */
+  async #runGuards(entry, to, from, token) {
+    for (const guard of entry.guards) {
+      let verdict;
+      try {
+        verdict = await guard({ to, from, ctx: this.#ctx });
+      } catch (err) {
+        if (token !== this.#token)
+          return null;
+        console.error("[puzzle] navigation guard failed:", err);
+        return false;
+      }
+      if (token !== this.#token)
+        return null;
+      if (verdict === false)
+        return false;
+      if (typeof verdict === "string") {
+        if (this.#guardRedirectCount >= 10) {
+          console.error(
+            "[puzzle] navigation guard redirect limit exceeded (10) \u2014 staying on the current route"
+          );
+          return false;
+        }
+        this.#guardRedirectCount++;
+        return verdict;
+      }
+    }
+    return true;
+  }
+  /**
+   * A latest navigation that stops before #swap must restore any older
+   * transition it superseded and clear a memory-pop target, exactly like the
+   * data()-failure path. Guard blocks/failures use this before any fresh view
+   * exists; data failures call it after destroying their fresh instances.
+   */
+  #recoverFailedNavigation(token) {
+    if (token !== this.#token)
+      return;
+    if (this.#pendingOut) {
+      const stalled = this.#pendingOut;
+      this.#pendingOut = null;
+      cancelAnimations(stalled.element);
+    }
+    this.#pendingIndex = null;
+  }
+  async #navigate(rawPath, { push, pop = false, replace = false, savedPosition = null, memoryIndex = null }) {
     const matchPath = stripPath(rawPath);
     const matched = this.#match(matchPath);
     if (!matched) {
@@ -3359,12 +3601,37 @@ var Router = class {
       return;
     }
     const token = ++this.#token;
-    if (push)
+    if (push || replace)
       this.#pendingIndex = null;
-    const from = this.current;
+    const current = this.current;
+    const from = current == null ? null : Object.freeze(current);
     const departScroll = typeof window !== "undefined" ? { x: window.scrollX || 0, y: window.scrollY || 0 } : null;
     const { entry, params } = matched;
     const cur = this.#state;
+    const loc = parseLocation(rawPath);
+    const to = Object.freeze({
+      path: rawPath,
+      pathname: loc.pathname,
+      query: loc.query,
+      hash: loc.hash,
+      route: entry.chain[entry.chain.length - 1],
+      params,
+      chain: entry.chain
+    });
+    if (entry.guards.length) {
+      const guardVerdict = await this.#runGuards(entry, to, from, token);
+      if (token !== this.#token || guardVerdict === null)
+        return;
+      if (guardVerdict === false) {
+        this.#recoverFailedNavigation(token);
+        return;
+      }
+      if (typeof guardVerdict === "string") {
+        const redirected = await this.replace(guardVerdict);
+        this.#recoverFailedNavigation(token);
+        return redirected;
+      }
+    }
     let keep = 0;
     if (cur) {
       const a2 = cur.entry.chain;
@@ -3391,12 +3658,6 @@ var Router = class {
     }
     const reuseLayout = !!(cur && cur.layout && !pendingLayoutOut && cur.layoutClass === entry.layout);
     const layout = reuseLayout ? cur.layout : entry.layout ? new entry.layout(this.#ctx) : null;
-    const to = Object.freeze({
-      path: rawPath,
-      route: entry.chain[entry.chain.length - 1],
-      params,
-      chain: entry.chain
-    });
     const isSSGTakeover = !cur && this.#container != null && this.#container.hasAttribute("data-puzzle-ssg");
     try {
       const loads = [];
@@ -3428,13 +3689,7 @@ var Router = class {
         v.destroy();
       if (layout && !reuseLayout)
         layout.destroy();
-      if (token === this.#token && this.#pendingOut) {
-        const stalled = this.#pendingOut;
-        this.#pendingOut = null;
-        cancelAnimations(stalled.element);
-      }
-      if (token === this.#token)
-        this.#pendingIndex = null;
+      this.#recoverFailedNavigation(token);
       return;
     }
     if (token !== this.#token) {
@@ -3445,13 +3700,15 @@ var Router = class {
       return;
     }
     const views = [...reusedViews, ...freshViews];
-    const hashIdx = rawPath.indexOf("#");
-    const anchor = hashIdx !== -1 ? rawPath.slice(hashIdx + 1) : null;
-    const scroll = this.#resolveScroll({ to, from, push, pop, savedPosition, anchor });
+    const anchor = loc.hash ? loc.hash.slice(1) : null;
+    const scroll = this.#resolveScroll({ to, from, push, pop, replace, savedPosition, anchor });
     if (keep === entry.chain.length) {
-      this.#commitLocation({ rawPath, entry, push, memoryIndex, departScroll });
+      this.#commitLocation({ rawPath, entry, push, replace, memoryIndex, departScroll });
       this.#commitState({
         rawPath,
+        pathname: loc.pathname,
+        query: loc.query,
+        hash: loc.hash,
         entry,
         params,
         views,
@@ -3480,6 +3737,11 @@ var Router = class {
     const rootVnode = childVnode;
     await this.#swap(token, cur, {
       rawPath,
+      // The parsed URL parts (v1.49, D83) — #commitState records them on
+      // #state so the `current` getter never reparses.
+      pathname: loc.pathname,
+      query: loc.query,
+      hash: loc.hash,
       entry,
       params,
       views,
@@ -3492,16 +3754,18 @@ var Router = class {
       to,
       // D61: #commitLocation (run as the first statement inside #swap's commit
       // window) reads these to move the URL/memory stack; null memoryIndex on a
-      // push/initial nav, set only for a memory-mode go/back/forward pop.
+      // push/initial nav, set only for a memory-mode go/back/forward pop;
+      // replace (D83) selects the entry-swapping commit instead of a push.
       // departScroll: the departure position captured at nav start, before the
       // outgoing view's teardown collapsed the page (see #navigate).
       push,
+      replace,
       memoryIndex,
       departScroll
     });
   }
   /**
-   * Commit this navigation's LOCATION side effects — URL + memory stack + title —
+   * Commit this navigation's LOCATION side effects — URL + memory stack + title/head (D84) —
    * inside the synchronous commit window, ATOMICALLY with the mount/#commitState
    * that follow (D61). Moved out of #navigate's post-gate block so that, in
    * SEQUENTIAL mode, it runs only AFTER the outgoing unit's out animation settles
@@ -3519,10 +3783,15 @@ var Router = class {
    * in-memory stack/index instead of the URL; the initial navigation and pops never
    * pushState but still set the title.
    *
-   * @param {{ rawPath: string, entry: object, push: boolean, memoryIndex: ?number, departScroll: ?{x:number,y:number} }} next
+   * On REPLACE (v1.49, D83) the current entry is swapped IN PLACE — see the
+   * branch below: history.replaceState with the entry's identity (its
+   * __puzzleScrollKey) preserved, or a memory-mode stack overwrite. No position
+   * save, no new entry key, no stack growth or index move.
+   *
+   * @param {{ rawPath: string, entry: object, push: boolean, replace?: boolean, memoryIndex: ?number, departScroll: ?{x:number,y:number} }} next
    */
   #commitLocation(next) {
-    const { rawPath, entry, push, memoryIndex } = next;
+    const { rawPath, entry, push, replace, memoryIndex } = next;
     if (push) {
       if (this.#mode === "memory") {
         this.#stack.length = this.#index + 1;
@@ -3538,15 +3807,26 @@ var Router = class {
           history.pushState({}, "", url);
         }
       }
+    } else if (replace) {
+      if (this.#mode === "memory") {
+        this.#stack[this.#index] = { path: rawPath };
+      } else {
+        const url = this.#mode === "hash" ? "#" + this.#base + rawPath : this.#base + rawPath;
+        if (this.#scrollEnabled()) {
+          history.replaceState({ __puzzleScrollKey: this.#scrollKey }, "", url);
+        } else {
+          history.replaceState({}, "", url);
+        }
+      }
     } else if (this.#mode === "memory" && memoryIndex != null) {
       this.#index = memoryIndex;
     }
     this.#pendingIndex = null;
-    this.#setTitle(entry);
+    this.#syncHead(entry);
   }
   /**
    * The async view transition. It animates the outgoing unit out, tears it down,
-   * COMMITS location/title/memory-stack (#commitLocation, the FIRST statement
+   * COMMITS location/title-head/memory-stack (#commitLocation, the FIRST statement
    * inside the #committing window — D61, so a superseded/failed out never moves
    * the URL), mounts the (preloaded) incoming sub-chain, and animates the animator
    * in — enforcing the one-animator rule documented in the file header
@@ -3782,6 +4062,11 @@ var Router = class {
   #commitState(next) {
     this.#state = {
       path: next.rawPath,
+      // The parsed URL parts (v1.49, D83), split ONCE by #navigate's
+      // parseLocation — the `current` getter reads these, never reparses.
+      pathname: next.pathname,
+      query: next.query,
+      hash: next.hash,
       entry: next.entry,
       params: next.params,
       views: next.views,
@@ -3789,6 +4074,7 @@ var Router = class {
       layout: next.layout,
       layoutClass: next.entry.layout
     };
+    this.#guardRedirectCount = 0;
     this.#warnMissingSlots(next.views);
     if (next.scroll) {
       const pos = next.scroll.anchor !== void 0 ? this.#resolveAnchorPosition(next.scroll.anchor) : next.scroll;
@@ -3826,15 +4112,17 @@ var Router = class {
    * scroll alone. Defaults: pop → the entry's saved position (top when none
    * survived, e.g. after a reload cleared the in-memory map); push → the
    * `#anchor` target when one is present (a { anchor } sentinel resolved after
-   * mount in #commitState, D41), else top; initial navigation → untouched (the
-   * browser owns first paint). A custom scrollBehavior(to, from, savedPosition)
-   * overrides the defaults — including the anchor, which still rides in to.path;
-   * a falsy return leaves scroll alone; errors are logged and treated as falsy.
+   * mount in #commitState, D41), else top; replace → LEAVE ALONE unless the
+   * target carries an explicit `#anchor` (v1.49, D83); initial navigation →
+   * untouched (the browser owns first paint). A custom
+   * scrollBehavior(to, from, savedPosition) overrides the defaults — including
+   * the anchor, which still rides in to.path; a falsy return leaves scroll
+   * alone; errors are logged and treated as falsy.
    */
-  #resolveScroll({ to, from, push, pop, savedPosition, anchor }) {
+  #resolveScroll({ to, from, push, pop, replace, savedPosition, anchor }) {
     if (!this.#scrollEnabled())
       return null;
-    if (!push && !pop)
+    if (!push && !pop && !replace)
       return null;
     if (typeof this.#scrollBehavior === "function") {
       try {
@@ -3845,6 +4133,8 @@ var Router = class {
         return null;
       }
     }
+    if (replace)
+      return anchor ? { anchor } : null;
     if (pop)
       return savedPosition || { x: 0, y: 0 };
     if (anchor)
@@ -3999,7 +4289,7 @@ var Router = class {
    * This navigation's transition mode (D65), destination-only — the outgoing
    * view/route is never consulted. Three tiers, most specific first:
    *   1. Nearest-defined `transitionMode` walking the DESTINATION chain
-   *      leaf → root (same walk as #setTitle's meta.title) — lets a parent
+   *      leaf → root (same walk as #syncHead's per-field head resolution) — lets a parent
    *      route (e.g. a `/settings` shell) set it once for every child.
    *   2. The incoming animator's (view or layout instance) own `transitionMode`
    *      field, colocated with `animations` on the class.
@@ -4028,17 +4318,24 @@ var Router = class {
     }
     return this.#defaultTransitionMode;
   }
-  /** Document title: nearest-defined meta.title walking the chain leaf → root. */
-  #setTitle(entry) {
+  /**
+   * Managed head sync (D84, v1.50 — subsumes the pre-D84 #setTitle): resolve
+   * the four reserved meta fields (title/description/canonical/socialImage)
+   * from the destination chain — head.js resolveHead, the same nearest-defined
+   * leaf→root walk #setTitle performed for meta.title alone — and sync
+   * document.title + the `data-puzzle-head`-marked tags (head.js syncHead:
+   * update in place / create / remove-when-unresolved). Runs inside
+   * #commitLocation, so D61 atomicity covers the head exactly as it covered the
+   * title: a failed or superseded navigation never touches it. On hybrid
+   * takeover the SSG-emitted tags carry the SAME identities, so navigation #0
+   * adopts them in place — never duplicates. Title semantics stay byte-
+   * compatible: only a non-null resolved title assigns document.title (see
+   * resolveHead's asymmetry note on explicit null).
+   */
+  #syncHead(entry) {
     if (this.#mode === "memory")
       return;
-    for (let i2 = entry.chain.length - 1; i2 >= 0; i2--) {
-      const meta = entry.chain[i2].meta;
-      if (meta && meta.title != null) {
-        document.title = meta.title;
-        return;
-      }
-    }
+    syncHead(resolveHead(entry.chain));
   }
   #handlePopState() {
     const path = this.#currentPath();
@@ -4148,6 +4445,7 @@ function flatten(node, ancestors, fullPaths, entries) {
     }
   }
   validateTransitionMode(node.transitionMode, `route "${node.path}"`);
+  validateGuard(node.guard, `route "${node.path}"`);
   const parentPath = isRoot ? null : fullPaths[fullPaths.length - 1];
   const fullPath = isRoot ? node.path : joinPath(parentPath, node.path);
   const chain = [...ancestors, node];
@@ -4179,7 +4477,8 @@ function makeEntry(chain, fullPaths) {
     fullPaths,
     regex: new RegExp("^" + regexPath + "$"),
     paramNames,
-    layout: chain[0].layout ?? null
+    layout: chain[0].layout ?? null,
+    guards: chain.map((node) => node.guard).filter(Boolean)
   };
 }
 function escapeRegExp(str2) {
@@ -4190,6 +4489,11 @@ function validateTransitionMode(value, label) {
     throw new Error(
       `[puzzle] unknown transitionMode: "${value}" on ${label} (expected 'sequential' or 'overlap')`
     );
+  }
+}
+function validateGuard(value, label) {
+  if (value != null && typeof value !== "function") {
+    throw new Error(`[puzzle] guard on ${label} must be a function (got ${typeof value})`);
   }
 }
 function joinPath(parentPath, childPath) {
@@ -4210,6 +4514,30 @@ function normalizeBase(base) {
 function stripPath(rawPath) {
   const path = rawPath.split("?")[0].split("#")[0];
   return path || "/";
+}
+function parseLocation(rawPath) {
+  const hashIdx = rawPath.indexOf("#");
+  const hash = hashIdx === -1 ? "" : rawPath.slice(hashIdx);
+  const beforeHash = hashIdx === -1 ? rawPath : rawPath.slice(0, hashIdx);
+  const queryIdx = beforeHash.indexOf("?");
+  const pathname = queryIdx === -1 ? beforeHash : beforeHash.slice(0, queryIdx);
+  const query = /* @__PURE__ */ Object.create(null);
+  if (queryIdx !== -1) {
+    for (const [key, value] of new URLSearchParams(beforeHash.slice(queryIdx + 1))) {
+      const prev = query[key];
+      if (prev === void 0)
+        query[key] = value;
+      else if (Array.isArray(prev))
+        prev.push(value);
+      else
+        query[key] = [prev, value];
+    }
+    for (const key of Object.keys(query)) {
+      if (Array.isArray(query[key]))
+        Object.freeze(query[key]);
+    }
+  }
+  return { pathname: pathname || "/", query: Object.freeze(query), hash };
 }
 function stripTrailingSlash(pathname) {
   return pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
@@ -4536,6 +4864,14 @@ var PuzzleApp = class {
     this.router = new Router(routes, routerOptions);
     if (this.#morphHandler)
       this.router.setMorphHandler(this.#morphHandler);
+    if (!this.formatters.getAll().link) {
+      this.formatters.register("link", (v) => {
+        if (v == null)
+          return "";
+        const s2 = String(v);
+        return this.router ? this.router.url(s2) : s2;
+      });
+    }
     this.ctx = { store: this.#store, router: this.router, formatters: this.formatters };
     this._mounted = true;
     if (typeof window !== "undefined") {
@@ -4652,11 +4988,121 @@ var PuzzleApp = class {
   }
 };
 
+// node_modules/@magic-spells/puzzle/client-runtime/views/flip.js
+var DEFAULT_DURATION = 250;
+var DEFAULT_EASING = "cubic-bezier(0.2, 0, 0, 1)";
+var MIN_DELTA = 0.5;
+var activeFlips = /* @__PURE__ */ new WeakMap();
+var warnedUnkeyedFlip = false;
+function warnUnkeyedFlip() {
+  if (warnedUnkeyedFlip)
+    return;
+  warnedUnkeyedFlip = true;
+  console.warn(
+    "[puzzle] `flip` requires a keyed row \u2014 this list child has no usable key, so it diffs positionally and cannot FLIP-animate; add key={ \u2026 } to the row root."
+  );
+}
+function beginFlip(pairs) {
+  let candidates = null;
+  for (const [oldChild, newChild] of pairs) {
+    const spec = newChild.attrs.flip;
+    if (spec == null || spec === false)
+      continue;
+    if (newChild.key == null) {
+      warnUnkeyedFlip();
+      continue;
+    }
+    if (!oldChild || !oldChild.el || oldChild.el.nodeType !== 1)
+      continue;
+    (candidates ??= []).push({ el: oldChild.el, newChild, spec, first: null });
+  }
+  if (!candidates)
+    return null;
+  if (prefersReducedMotion())
+    return null;
+  if (typeof candidates[0].el.animate !== "function")
+    return null;
+  for (const c2 of candidates) {
+    try {
+      c2.first = c2.el.getBoundingClientRect();
+    } catch {
+    }
+  }
+  for (const c2 of candidates)
+    cancelTrackedFlip(c2.el);
+  return candidates;
+}
+function playFlip(candidates) {
+  for (const c2 of candidates) {
+    const el = c2.newChild.el;
+    if (!c2.first || !el || el.nodeType !== 1 || typeof el.animate !== "function")
+      continue;
+    let last;
+    try {
+      last = el.getBoundingClientRect();
+    } catch {
+      continue;
+    }
+    const dx = c2.first.left - last.left;
+    const dy = c2.first.top - last.top;
+    if (Math.abs(dx) < MIN_DELTA && Math.abs(dy) < MIN_DELTA)
+      continue;
+    const { duration, easing } = resolveFlipOptions(c2.spec);
+    const translate = `translate(${dx}px, ${dy}px)`;
+    let base = "none";
+    try {
+      base = getComputedStyle(el).transform || "none";
+    } catch {
+    }
+    const from = base !== "none" ? `${translate} ${base}` : translate;
+    const to = base !== "none" ? base : "none";
+    let animation;
+    try {
+      animation = el.animate([{ transform: from }, { transform: to }], { duration, easing });
+    } catch {
+      continue;
+    }
+    activeFlips.set(el, animation);
+    const done = () => {
+      if (activeFlips.get(el) === animation)
+        activeFlips.delete(el);
+    };
+    try {
+      animation.finished.then(done, done);
+    } catch {
+    }
+  }
+}
+function cancelTrackedFlip(el) {
+  const prior = activeFlips.get(el);
+  if (!prior)
+    return;
+  activeFlips.delete(el);
+  try {
+    prior.cancel();
+  } catch {
+  }
+}
+function resolveFlipOptions(spec) {
+  let duration = DEFAULT_DURATION;
+  let easing = DEFAULT_EASING;
+  if (spec && typeof spec === "object") {
+    if (typeof spec.duration === "number" && Number.isFinite(spec.duration) && spec.duration > 0) {
+      duration = spec.duration;
+    }
+    if (typeof spec.easing === "string" && spec.easing !== "") {
+      easing = spec.easing;
+    }
+  }
+  return { duration, easing };
+}
+
 // node_modules/@magic-spells/puzzle/client-runtime/views/viewManager.js
 var PROPS = /* @__PURE__ */ new Set(["value", "checked", "disabled", "selected", "muted"]);
 var SVG_NS = "http://www.w3.org/2000/svg";
 var LISTENERS = Symbol("puzzle-listeners");
 var ONCE_SPENT = "\0once";
+var OUTSIDE_OPTS = { capture: true };
 var ViewManager = class {
   /**
    * @param {Element} container host element this manager renders into
@@ -4922,6 +5368,19 @@ function releaseSubtree(vnode) {
   const ref = vnode.attrs.ref;
   if (typeof ref === "function")
     ref(null, vnode.el);
+  const listeners = vnode.el?.[LISTENERS];
+  if (listeners) {
+    for (const key of Object.keys(listeners)) {
+      if (key.endsWith(ONCE_SPENT))
+        continue;
+      const [event, ...mods] = key.slice(1).split(":");
+      if (!mods.includes("outside"))
+        continue;
+      document.removeEventListener(event, listeners[key], OUTSIDE_OPTS);
+      delete listeners[key];
+      delete listeners[key + ONCE_SPENT];
+    }
+  }
   if (typeof vnode.children === "string")
     return;
   for (const child of vnode.children) {
@@ -5004,7 +5463,10 @@ function patchKeyedChildren(el, oldChildren, newChildren, ctx) {
   let oldUnkeyed = oldChildren.filter((c2) => c2.key == null);
   let unkeyedIdx = 0;
   const seenNewKeys = /* @__PURE__ */ new Set();
+  let hasFlip = false;
   const pairs = newChildren.map((newChild) => {
+    if (!hasFlip && "flip" in newChild.attrs)
+      hasFlip = true;
     if (newChild.key != null) {
       const mapKey = newChild.tag + "\0" + newChild.key;
       if (seenNewKeys.has(mapKey))
@@ -5023,6 +5485,7 @@ function patchKeyedChildren(el, oldChildren, newChildren, ctx) {
     }
     return [null, newChild];
   });
+  const flip = hasFlip ? beginFlip(pairs) : null;
   for (const child of oldChildren) {
     if (!matched.has(child))
       unmount(child);
@@ -5040,6 +5503,8 @@ function patchKeyedChildren(el, oldChildren, newChildren, ctx) {
     }
     ref = newChild.el;
   }
+  if (flip)
+    playFlip(flip);
 }
 function nextPersistentSibling(node) {
   let n2 = node.nextSibling;
@@ -5048,16 +5513,18 @@ function nextPersistentSibling(node) {
   return n2;
 }
 function setAttr(el, name, value) {
-  if (name === "key" || name === "island" || name === "ref")
+  if (name === "key" || name === "island" || name === "ref" || name === "flip")
     return;
   if (name.startsWith("@")) {
     const [event, ...mods] = name.slice(1).split(":");
+    const target = mods.includes("outside") ? document : el;
+    const opts = target === el ? void 0 : OUTSIDE_OPTS;
     const listeners = el[LISTENERS] ??= {};
     if (listeners[name])
-      el.removeEventListener(event, listeners[name]);
+      target.removeEventListener(event, listeners[name], opts);
     if (typeof value === "function") {
-      const handler = mods.length ? withModifiers(name, mods, value, listeners) : value;
-      el.addEventListener(event, handler);
+      const handler = mods.length ? withModifiers(name, mods, value, listeners, el) : value;
+      target.addEventListener(event, handler, opts);
       listeners[name] = handler;
     } else {
       delete listeners[name];
@@ -5084,13 +5551,16 @@ function setAttr(el, name, value) {
   }
 }
 function removeAttr(el, name) {
-  if (name === "key" || name === "island" || name === "ref")
+  if (name === "key" || name === "island" || name === "ref" || name === "flip")
     return;
   if (name.startsWith("@")) {
-    const event = name.slice(1).split(":")[0];
+    const [event, ...mods] = name.slice(1).split(":");
     const listeners = el[LISTENERS];
     if (listeners?.[name]) {
-      el.removeEventListener(event, listeners[name]);
+      if (mods.includes("outside"))
+        document.removeEventListener(event, listeners[name], OUTSIDE_OPTS);
+      else
+        el.removeEventListener(event, listeners[name]);
       delete listeners[name];
       delete listeners[name + ONCE_SPENT];
     }
@@ -5113,9 +5583,12 @@ var KEY_FILTERS = {
   backspace: "Backspace",
   delete: "Delete"
 };
-function withModifiers(fullName, mods, handler, listeners) {
+function withModifiers(fullName, mods, handler, listeners, el) {
   const spentKey = fullName + ONCE_SPENT;
+  const outside = mods.includes("outside");
   return (event) => {
+    if (outside && el.contains(event.target))
+      return;
     for (const m of mods) {
       const key = KEY_FILTERS[m];
       if (key !== void 0 && event.key !== key)
@@ -6078,7 +6551,7 @@ var PuzzleView = class {
 };
 
 // app/components/ui/toast.js
-var DEFAULT_DURATION = 5e3;
+var DEFAULT_DURATION2 = 5e3;
 var LEAVE_MS = 180;
 var VARIANTS = /* @__PURE__ */ new Set(["default", "success", "danger"]);
 var DismissTimer = class {
@@ -6161,7 +6634,7 @@ function toast(input) {
   const opts = typeof input === "string" ? { message: input } : input || {};
   const id = ++counter;
   const variant = VARIANTS.has(opts.variant) ? opts.variant : "default";
-  const duration = opts.duration === void 0 ? DEFAULT_DURATION : Math.max(0, Number(opts.duration) || 0);
+  const duration = opts.duration === void 0 ? DEFAULT_DURATION2 : Math.max(0, Number(opts.duration) || 0);
   const entry = {
     id,
     title: opts.title || "",
@@ -6509,6 +6982,317 @@ Collapsible.prototype.render = function() {
   ]);
 };
 Collapsible.__pzlModule = "app/components/ui/Collapsible.pzl";
+
+// app/components/ui/DropdownMenu.pzl
+var TRIGGER = "inline-flex items-center justify-center gap-2 whitespace-nowrap select-none rounded-lg font-medium cursor-pointer transition-colors h-9 px-4 text-sm border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring disabled:opacity-50 disabled:pointer-events-none";
+var _uid = 0;
+function normalizeItems(items) {
+  if (!Array.isArray(items))
+    return [];
+  return items.map((it) => {
+    if (it && it.divider)
+      return { kind: "divider" };
+    if (it && it.group != null)
+      return { kind: "group", label: String(it.group) };
+    return {
+      kind: it && it.href ? "link" : "action",
+      label: it && it.label != null ? String(it.label) : "",
+      value: it ? it.value : void 0,
+      href: it && it.href || null,
+      danger: !!(it && it.danger),
+      disabled: !!(it && it.disabled)
+    };
+  });
+}
+var isFocusable = (item) => item && (item.kind === "action" || item.kind === "link") && !item.disabled;
+var DropdownMenu = class extends PuzzleView {
+  created() {
+    this._uid = ++_uid;
+    this._docBound = false;
+    this._pendingFocus = null;
+    this._onDocPointerDown = (event) => {
+      if (this.getData().open && this.element && !this.element.contains(event.target)) {
+        this.closeMenu({ refocus: false });
+      }
+    };
+    this.setData({ open: false, activeIndex: -1 });
+  }
+  data(params, props) {
+    return {
+      items: normalizeItems(props.items),
+      label: props.label != null ? String(props.label) : "",
+      align: props.align === "end" ? "end" : "start",
+      disabled: !!props.disabled,
+      triggerId: `dm-trigger-${this._uid}`,
+      panelId: `dm-panel-${this._uid}`,
+      rootClass: ["relative inline-block", props.class || ""].join(" "),
+      triggerClass: [TRIGGER, props.triggerClass || ""].join(" ")
+    };
+  }
+  // ---- open / close ----------------------------------------------------------
+  openMenu(activeIndex) {
+    if (this.getData().open)
+      return;
+    this.setData({ open: true, activeIndex });
+    if (!this._docBound) {
+      document.addEventListener("pointerdown", this._onDocPointerDown);
+      this._docBound = true;
+    }
+    const { show: show2 } = this.props;
+    if (typeof show2 === "function")
+      show2();
+  }
+  closeMenu(opts = {}) {
+    if (!this.getData().open)
+      return;
+    if (this._docBound) {
+      document.removeEventListener("pointerdown", this._onDocPointerDown);
+      this._docBound = false;
+    }
+    this.setData({ open: false, activeIndex: -1 });
+    const { hide } = this.props;
+    if (typeof hide === "function")
+      hide();
+    if (opts.refocus) {
+      const trigger = this.element && this.element.querySelector("[data-dm-trigger]");
+      if (trigger)
+        trigger.focus();
+    }
+  }
+  // ---- roving focus helpers --------------------------------------------------
+  firstIndex() {
+    const { items } = this.getData();
+    for (let i2 = 0; i2 < items.length; i2++)
+      if (isFocusable(items[i2]))
+        return i2;
+    return -1;
+  }
+  lastIndex() {
+    const { items } = this.getData();
+    for (let i2 = items.length - 1; i2 >= 0; i2--)
+      if (isFocusable(items[i2]))
+        return i2;
+    return -1;
+  }
+  // Move active by dir (+1/-1), skipping dividers/groups/disabled, wrapping.
+  moveActive(dir) {
+    const { items, activeIndex } = this.getData();
+    const n2 = items.length;
+    if (!n2)
+      return;
+    let i2 = activeIndex < 0 ? dir > 0 ? -1 : 0 : activeIndex;
+    for (let step = 0; step < n2; step++) {
+      i2 = (i2 + dir + n2) % n2;
+      if (isFocusable(items[i2])) {
+        this.moveTo(i2);
+        return;
+      }
+    }
+  }
+  moveTo(index) {
+    if (index < 0)
+      return;
+    this._pendingFocus = index;
+    this.setData("activeIndex", index);
+  }
+  // Enter the open panel from the trigger: open if needed, land on first/last.
+  enterMenu(fromEnd) {
+    const index = fromEnd ? this.lastIndex() : this.firstIndex();
+    if (index < 0)
+      return;
+    if (this.getData().open) {
+      this.moveTo(index);
+    } else {
+      this._pendingFocus = index;
+      this.openMenu(index);
+    }
+  }
+  activate(index, event) {
+    const item = this.getData().items[index];
+    if (!item || item.disabled)
+      return;
+    const { select } = this.props;
+    if (typeof select === "function")
+      select(item.value, event);
+    this.closeMenu({ refocus: item.kind !== "link" });
+  }
+  // Apply pending roving focus after the DOM has been patched.
+  afterUpdate() {
+    if (this._pendingFocus == null)
+      return;
+    const index = this._pendingFocus;
+    this._pendingFocus = null;
+    const el = this.element && this.element.querySelector(`[data-dm-index="${index}"]`);
+    if (el)
+      el.focus();
+  }
+  destroyed() {
+    if (this._docBound) {
+      document.removeEventListener("pointerdown", this._onDocPointerDown);
+      this._docBound = false;
+    }
+  }
+  events = {
+    // Trigger is a real <button>: native click fires on mouse, Enter, and Space.
+    toggle: (event) => {
+      if (this.getData().disabled)
+        return;
+      if (this.getData().open)
+        this.closeMenu({ refocus: false });
+      else
+        this.openMenu(-1);
+    },
+    onTriggerDown: (event) => {
+      if (this.getData().disabled)
+        return;
+      this.enterMenu(false);
+    },
+    onTriggerUp: (event) => {
+      if (this.getData().disabled)
+        return;
+      this.enterMenu(true);
+    },
+    onTriggerEscape: (event) => {
+      if (this.getData().open)
+        this.closeMenu({ refocus: false });
+    },
+    // One handler on the panel; item focus (roving) tells us the active row.
+    onPanelKeydown: (event) => {
+      const data = this.getData();
+      if (!data.open)
+        return;
+      switch (event.key) {
+        case "ArrowDown":
+          event.preventDefault();
+          this.moveActive(1);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          this.moveActive(-1);
+          break;
+        case "Home":
+          event.preventDefault();
+          this.moveTo(this.firstIndex());
+          break;
+        case "End":
+          event.preventDefault();
+          this.moveTo(this.lastIndex());
+          break;
+        case "Escape":
+          event.preventDefault();
+          this.closeMenu({ refocus: true });
+          break;
+        case " ": {
+          const item = data.items[data.activeIndex];
+          if (item && item.kind === "link") {
+            event.preventDefault();
+            this.activate(data.activeIndex, event);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    onItemClick: (index, event) => {
+      this.activate(index, event);
+    }
+  };
+};
+DropdownMenu.prototype.render = function() {
+  const __d = this.getData();
+  const __f = this.ctx.formatters.getAll();
+  return new ViewNode("div", { class: __d.rootClass }, [
+    new ViewNode("button", {
+      id: __d.triggerId,
+      "data-dm-trigger": true,
+      type: "button",
+      class: __d.triggerClass,
+      disabled: __d.disabled,
+      "aria-haspopup": "true",
+      "aria-controls": __d.panelId,
+      "aria-expanded": __d.open ? "true" : "false",
+      "@click": (this.__h ??= {})[0] ??= (event) => this.events.toggle(event),
+      "@keydown:down:prevent": (this.__h ??= {})[1] ??= (event) => this.events.onTriggerDown(event),
+      "@keydown:up:prevent": (this.__h ??= {})[2] ??= (event) => this.events.onTriggerUp(event),
+      "@keydown:escape": (this.__h ??= {})[3] ??= (event) => this.events.onTriggerEscape(event)
+    }, [
+      new ViewNode(SLOT_TAG, { name: "trigger" }, [
+        new ViewNode("span", {}, [
+          new ViewNode("text", { value: String(__d.label) })
+        ]),
+        new ViewNode("svg", {
+          class: `size-4 shrink-0 transition-[rotate] ${__d.open ? "rotate-180" : ""}`,
+          viewBox: "0 0 16 16",
+          fill: "currentColor",
+          "aria-hidden": "true"
+        }, [
+          new ViewNode("path", { d: "M4 6l4 4 4-4z" }, [])
+        ])
+      ])
+    ]),
+    ...__d.open ? [
+      new ViewNode(
+        "div",
+        {
+          id: __d.panelId,
+          "aria-labelledby": __d.triggerId,
+          class: `absolute ${__d.align === "end" ? "right-0" : "left-0"} top-full mt-1 min-w-[10rem] rounded-lg border border-border bg-surface p-1 shadow-lg z-50`,
+          "@keydown": (this.__h ??= {})[4] ??= (event) => this.events.onPanelKeydown(event)
+        },
+        __d.items.map(
+          (item, i2) => new ViewNode("div", {
+            key: ViewNode.keyOf(item),
+            class: "contents"
+          }, [
+            ...item.kind === "divider" ? [
+              new ViewNode("div", {
+                class: "my-1 border-t border-border",
+                role: "separator",
+                "aria-hidden": "true"
+              }, [])
+            ] : [
+              ...item.kind === "group" ? [
+                new ViewNode("div", {
+                  class: "px-2.5 pt-2 pb-1 text-xs font-medium text-muted uppercase tracking-wide"
+                }, [
+                  new ViewNode("text", { value: String(item.label) })
+                ])
+              ] : [
+                ...item.kind === "link" ? [
+                  new ViewNode("a", {
+                    href: item.href,
+                    "data-dm-index": i2,
+                    tabindex: __d.activeIndex === i2 ? "0" : "-1",
+                    "aria-disabled": item.disabled ? "true" : false,
+                    class: `block w-full text-left rounded-md px-2.5 py-1.5 text-sm ${item.danger ? "text-danger hover:bg-danger-tint" : "text-body hover:bg-surface-sunken hover:text-ink"} ${item.disabled ? "opacity-50 pointer-events-none" : ""} focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring`,
+                    "@click": (event) => this.events.onItemClick(i2, event)
+                  }, [
+                    new ViewNode("text", { value: String(item.label) })
+                  ])
+                ] : [
+                  new ViewNode("button", {
+                    type: "button",
+                    "data-dm-index": i2,
+                    tabindex: __d.activeIndex === i2 ? "0" : "-1",
+                    disabled: item.disabled,
+                    class: `block w-full text-left rounded-md px-2.5 py-1.5 text-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${item.danger ? "text-danger hover:bg-danger-tint" : "text-body hover:bg-surface-sunken hover:text-ink"} focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring`,
+                    "@click": (event) => this.events.onItemClick(i2, event)
+                  }, [
+                    new ViewNode("text", { value: String(item.label) })
+                  ])
+                ]
+              ]
+            ]
+          ])
+        )
+      )
+    ] : [
+      new ViewNode("#")
+    ]
+  ]);
+};
+DropdownMenu.__pzlModule = "app/components/ui/DropdownMenu.pzl";
 
 // app/docs/nav.js
 var GETTING_STARTED = [
@@ -7155,15 +7939,29 @@ SideNav.prototype.render = function() {
 SideNav.__pzlModule = "app/components/docs/SideNav.pzl";
 
 // app/layouts/Default.pzl
+var SCHEMES = [
+  { label: "Default", value: "default" },
+  { label: "Claw", value: "claw" },
+  { label: "Void", value: "void" },
+  { label: "Dim", value: "dim" }
+];
+var schemeItems = (active) => SCHEMES.map((scheme) => ({
+  ...scheme,
+  label: `${scheme.value === active ? "\u2713 " : ""}${scheme.label}`
+}));
 var DefaultLayout = class extends PuzzleView {
   data(params, props) {
     const path = this.route && this.route.path || this.ctx && this.ctx.router && this.ctx.router.current && this.ctx.router.current.path || "/";
     const explicit = document.documentElement.dataset.theme;
     const darkMode = explicit ? explicit === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const explicitScheme = typeof document !== "undefined" && document.documentElement.dataset.scheme;
+    const scheme = explicitScheme === "claw" || explicitScheme === "void" || explicitScheme === "dim" ? explicitScheme : "default";
     return {
       path,
       pieceCount: COMPONENTS.length,
       mobileNavOpen: !!this.getData().mobileNavOpen,
+      scheme,
+      schemeItems: schemeItems(scheme),
       darkMode,
       lightMode: !darkMode,
       themeLabel: darkMode ? "Switch to light mode" : "Switch to dark mode"
@@ -7172,6 +7970,23 @@ var DefaultLayout = class extends PuzzleView {
   events = {
     setMobileNavOpen: (open) => {
       this.setData({ mobileNavOpen: open });
+      this.refresh();
+    },
+    setScheme: (scheme) => {
+      const next = scheme === "claw" || scheme === "void" || scheme === "dim" ? scheme : "default";
+      if (typeof document !== "undefined") {
+        if (next === "default")
+          delete document.documentElement.dataset.scheme;
+        else
+          document.documentElement.dataset.scheme = next;
+      }
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.setItem("pieces-scheme", next);
+        } catch (e2) {
+        }
+      }
+      this.setData({ scheme: next, schemeItems: schemeItems(next) });
       this.refresh();
     },
     toggleTheme: () => {
@@ -7203,10 +8018,53 @@ DefaultLayout.prototype.render = function() {
           new ViewNode("span", { class: "text-xs text-muted" }, [
             new ViewNode("text", { value: String(__d.pieceCount) + " pieces \xB7 v0.1" })
           ]),
+          new ViewNode(DropdownMenu, {
+            label: "Color scheme",
+            align: "end",
+            items: __d.schemeItems,
+            triggerClass: "h-auto! rounded-md! border-0! bg-transparent! p-1.5! text-muted! hover:border-transparent! hover:bg-surface-sunken! hover:text-ink! outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            select: (this.__h ??= {})[0] ??= (event) => this.events.setScheme(event)
+          }, [
+            new ViewNode("span", {
+              slot: "trigger",
+              class: "flex items-center",
+              "aria-label": "Color scheme"
+            }, [
+              new ViewNode("svg", {
+                class: "size-4.5",
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+                "aria-hidden": "true"
+              }, [
+                new ViewNode("circle", {
+                  cx: "13.5",
+                  cy: "6.5",
+                  r: "2.5"
+                }, []),
+                new ViewNode("circle", {
+                  cx: "17.5",
+                  cy: "11.5",
+                  r: "2.5"
+                }, []),
+                new ViewNode("circle", {
+                  cx: "8.5",
+                  cy: "7.5",
+                  r: "2.5"
+                }, []),
+                new ViewNode("path", {
+                  d: "M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.2a2 2 0 0 1-1.8-2.8l.4-.9A2.4 2.4 0 0 0 14.2 3H12z"
+                }, [])
+              ])
+            ])
+          ]),
           new ViewNode("button", {
             type: "button",
             "aria-label": __d.themeLabel,
-            "@click": (this.__h ??= {})[0] ??= (event) => this.events.toggleTheme(event),
+            "@click": (this.__h ??= {})[1] ??= (event) => this.events.toggleTheme(event),
             class: "cursor-pointer rounded-md p-1.5 text-muted transition-colors hover:bg-surface-sunken hover:text-ink outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           }, [
             ...__d.darkMode ? [
@@ -7274,7 +8132,7 @@ DefaultLayout.prototype.render = function() {
       new ViewNode(Collapsible, {
         label: "Menu",
         open: __d.mobileNavOpen,
-        change: (this.__h ??= {})[1] ??= (event) => this.events.setMobileNavOpen(event)
+        change: (this.__h ??= {})[2] ??= (event) => this.events.setMobileNavOpen(event)
       }, [
         new ViewNode("div", { class: "max-h-[60vh] overflow-y-auto pb-2" }, [
           new ViewNode(SideNav, { path: __d.path }, [])
@@ -10801,6 +11659,7 @@ var Theming = class extends PuzzleView {
       usageSnippet,
       toc: [
         { label: "How it works", href: "#how-it-works" },
+        { label: "Schemes", href: "#schemes" },
         { label: "Text & ink", href: "#text" },
         { label: "Surfaces", href: "#surfaces" },
         { label: "Brand", href: "#brand" },
@@ -10892,6 +11751,25 @@ Theming.prototype.render = function() {
             code: __d.mechanismSnippet,
             lang: "css"
           }, [])
+        ]),
+        new ViewNode("section", {
+          id: "schemes",
+          class: "mt-14 scroll-mt-20"
+        }, [
+          new ViewNode("h2", { class: "mb-2 text-xl font-semibold tracking-tight text-ink" }, [
+            new ViewNode("text", { value: "Schemes" })
+          ]),
+          new ViewNode("p", { class: "max-w-2xl text-sm/relaxed text-body" }, [
+            new ViewNode("text", { value: "Puzzle Pieces includes four schemes: Default, Claw, Void, and Dim. The variants live in" }),
+            new ViewNode("code", { class: "rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[13px] text-ink" }, [
+              new ViewNode("text", { value: "registry/theme/*.css" })
+            ]),
+            new ViewNode("text", { value: "as drop-in replacements for" }),
+            new ViewNode("code", { class: "rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[13px] text-ink" }, [
+              new ViewNode("text", { value: "pieces.css" })
+            ]),
+            new ViewNode("text", { value: ". Every scheme contains both light and dark modes, so the existing theme switcher keeps working unchanged." })
+          ])
         ]),
         new ViewNode("section", {
           id: "text",
@@ -11026,7 +11904,7 @@ var BADGE = "shrink-0 rounded-full bg-surface-sunken px-2 py-0.5 text-xs font-me
 var rowPad = (collapsed) => collapsed ? "justify-center px-2 py-2" : "px-3 py-2";
 var linkClass = (active, collapsed) => [ROW_BASE, rowPad(collapsed), active ? ACTIVE2 : IDLE2].join(" ");
 var childLinkClass = (active) => [ROW_BASE, "px-3 py-1.5", active ? ACTIVE2 : IDLE2].join(" ");
-function normalizeItems(items, activePath) {
+function normalizeItems2(items, activePath) {
   const list = Array.isArray(items) ? items : [];
   return list.map((it, i2) => {
     if (it && it.divider)
@@ -11082,7 +11960,7 @@ var Sidebar = class extends PuzzleView {
   data(params, props) {
     const activePath = props.activePath || "";
     const collapsed = this._collapsed();
-    const items = normalizeItems(props.items, activePath);
+    const items = normalizeItems2(props.items, activePath);
     const base = `pieces-sidebar-${this._uid}`;
     if (activePath !== this._lastActive) {
       this._lastActive = activePath;
@@ -15697,8 +16575,8 @@ var HEIGHT = { sm: "h-8", md: "h-9", lg: "h-10" };
 var PRIMARY_PAD = { sm: "px-3 text-sm", md: "px-4 text-sm", lg: "px-5 text-base" };
 var CARET_W = { sm: "w-8", md: "w-9", lg: "w-10" };
 var ICON = { sm: "size-3.5", md: "size-4", lg: "size-4" };
-var _uid = 0;
-function normalizeItems2(items) {
+var _uid2 = 0;
+function normalizeItems3(items) {
   if (!Array.isArray(items))
     return [];
   return items.map((it) => {
@@ -15713,10 +16591,10 @@ function normalizeItems2(items) {
     };
   });
 }
-var isFocusable = (item) => item && item.kind === "action" && !item.disabled;
+var isFocusable2 = (item) => item && item.kind === "action" && !item.disabled;
 var SplitButton = class extends PuzzleView {
   created() {
-    this._uid = ++_uid;
+    this._uid = ++_uid2;
     this._docBound = false;
     this._pendingFocus = null;
     this._onDocPointerDown = (event) => {
@@ -15744,7 +16622,7 @@ var SplitButton = class extends PuzzleView {
       "rounded-r-lg rounded-l-none border-l border-current/20"
     ].join(" ");
     return {
-      items: normalizeItems2(props.actions),
+      items: normalizeItems3(props.actions),
       label: props.label != null ? String(props.label) : "",
       disabled: !!props.disabled,
       menuLabel: props.label != null && String(props.label) !== "" ? `More ${String(props.label).toLowerCase()} actions` : "More actions",
@@ -15784,14 +16662,14 @@ var SplitButton = class extends PuzzleView {
   firstIndex() {
     const { items } = this.getData();
     for (let i2 = 0; i2 < items.length; i2++)
-      if (isFocusable(items[i2]))
+      if (isFocusable2(items[i2]))
         return i2;
     return -1;
   }
   lastIndex() {
     const { items } = this.getData();
     for (let i2 = items.length - 1; i2 >= 0; i2--)
-      if (isFocusable(items[i2]))
+      if (isFocusable2(items[i2]))
         return i2;
     return -1;
   }
@@ -15804,7 +16682,7 @@ var SplitButton = class extends PuzzleView {
     let i2 = activeIndex < 0 ? dir > 0 ? -1 : 0 : activeIndex;
     for (let step = 0; step < n2; step++) {
       i2 = (i2 + dir + n2) % n2;
-      if (isFocusable(items[i2])) {
+      if (isFocusable2(items[i2])) {
         this.moveTo(i2);
         return;
       }
@@ -16207,317 +17085,6 @@ Breadcrumb.prototype.render = function() {
   ]);
 };
 Breadcrumb.__pzlModule = "app/components/ui/Breadcrumb.pzl";
-
-// app/components/ui/DropdownMenu.pzl
-var TRIGGER = "inline-flex items-center justify-center gap-2 whitespace-nowrap select-none rounded-lg font-medium cursor-pointer transition-colors h-9 px-4 text-sm border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring disabled:opacity-50 disabled:pointer-events-none";
-var _uid2 = 0;
-function normalizeItems3(items) {
-  if (!Array.isArray(items))
-    return [];
-  return items.map((it) => {
-    if (it && it.divider)
-      return { kind: "divider" };
-    if (it && it.group != null)
-      return { kind: "group", label: String(it.group) };
-    return {
-      kind: it && it.href ? "link" : "action",
-      label: it && it.label != null ? String(it.label) : "",
-      value: it ? it.value : void 0,
-      href: it && it.href || null,
-      danger: !!(it && it.danger),
-      disabled: !!(it && it.disabled)
-    };
-  });
-}
-var isFocusable2 = (item) => item && (item.kind === "action" || item.kind === "link") && !item.disabled;
-var DropdownMenu = class extends PuzzleView {
-  created() {
-    this._uid = ++_uid2;
-    this._docBound = false;
-    this._pendingFocus = null;
-    this._onDocPointerDown = (event) => {
-      if (this.getData().open && this.element && !this.element.contains(event.target)) {
-        this.closeMenu({ refocus: false });
-      }
-    };
-    this.setData({ open: false, activeIndex: -1 });
-  }
-  data(params, props) {
-    return {
-      items: normalizeItems3(props.items),
-      label: props.label != null ? String(props.label) : "",
-      align: props.align === "end" ? "end" : "start",
-      disabled: !!props.disabled,
-      triggerId: `dm-trigger-${this._uid}`,
-      panelId: `dm-panel-${this._uid}`,
-      rootClass: ["relative inline-block", props.class || ""].join(" "),
-      triggerClass: [TRIGGER, props.triggerClass || ""].join(" ")
-    };
-  }
-  // ---- open / close ----------------------------------------------------------
-  openMenu(activeIndex) {
-    if (this.getData().open)
-      return;
-    this.setData({ open: true, activeIndex });
-    if (!this._docBound) {
-      document.addEventListener("pointerdown", this._onDocPointerDown);
-      this._docBound = true;
-    }
-    const { show: show2 } = this.props;
-    if (typeof show2 === "function")
-      show2();
-  }
-  closeMenu(opts = {}) {
-    if (!this.getData().open)
-      return;
-    if (this._docBound) {
-      document.removeEventListener("pointerdown", this._onDocPointerDown);
-      this._docBound = false;
-    }
-    this.setData({ open: false, activeIndex: -1 });
-    const { hide } = this.props;
-    if (typeof hide === "function")
-      hide();
-    if (opts.refocus) {
-      const trigger = this.element && this.element.querySelector("[data-dm-trigger]");
-      if (trigger)
-        trigger.focus();
-    }
-  }
-  // ---- roving focus helpers --------------------------------------------------
-  firstIndex() {
-    const { items } = this.getData();
-    for (let i2 = 0; i2 < items.length; i2++)
-      if (isFocusable2(items[i2]))
-        return i2;
-    return -1;
-  }
-  lastIndex() {
-    const { items } = this.getData();
-    for (let i2 = items.length - 1; i2 >= 0; i2--)
-      if (isFocusable2(items[i2]))
-        return i2;
-    return -1;
-  }
-  // Move active by dir (+1/-1), skipping dividers/groups/disabled, wrapping.
-  moveActive(dir) {
-    const { items, activeIndex } = this.getData();
-    const n2 = items.length;
-    if (!n2)
-      return;
-    let i2 = activeIndex < 0 ? dir > 0 ? -1 : 0 : activeIndex;
-    for (let step = 0; step < n2; step++) {
-      i2 = (i2 + dir + n2) % n2;
-      if (isFocusable2(items[i2])) {
-        this.moveTo(i2);
-        return;
-      }
-    }
-  }
-  moveTo(index) {
-    if (index < 0)
-      return;
-    this._pendingFocus = index;
-    this.setData("activeIndex", index);
-  }
-  // Enter the open panel from the trigger: open if needed, land on first/last.
-  enterMenu(fromEnd) {
-    const index = fromEnd ? this.lastIndex() : this.firstIndex();
-    if (index < 0)
-      return;
-    if (this.getData().open) {
-      this.moveTo(index);
-    } else {
-      this._pendingFocus = index;
-      this.openMenu(index);
-    }
-  }
-  activate(index, event) {
-    const item = this.getData().items[index];
-    if (!item || item.disabled)
-      return;
-    const { select } = this.props;
-    if (typeof select === "function")
-      select(item.value, event);
-    this.closeMenu({ refocus: item.kind !== "link" });
-  }
-  // Apply pending roving focus after the DOM has been patched.
-  afterUpdate() {
-    if (this._pendingFocus == null)
-      return;
-    const index = this._pendingFocus;
-    this._pendingFocus = null;
-    const el = this.element && this.element.querySelector(`[data-dm-index="${index}"]`);
-    if (el)
-      el.focus();
-  }
-  destroyed() {
-    if (this._docBound) {
-      document.removeEventListener("pointerdown", this._onDocPointerDown);
-      this._docBound = false;
-    }
-  }
-  events = {
-    // Trigger is a real <button>: native click fires on mouse, Enter, and Space.
-    toggle: (event) => {
-      if (this.getData().disabled)
-        return;
-      if (this.getData().open)
-        this.closeMenu({ refocus: false });
-      else
-        this.openMenu(-1);
-    },
-    onTriggerDown: (event) => {
-      if (this.getData().disabled)
-        return;
-      this.enterMenu(false);
-    },
-    onTriggerUp: (event) => {
-      if (this.getData().disabled)
-        return;
-      this.enterMenu(true);
-    },
-    onTriggerEscape: (event) => {
-      if (this.getData().open)
-        this.closeMenu({ refocus: false });
-    },
-    // One handler on the panel; item focus (roving) tells us the active row.
-    onPanelKeydown: (event) => {
-      const data = this.getData();
-      if (!data.open)
-        return;
-      switch (event.key) {
-        case "ArrowDown":
-          event.preventDefault();
-          this.moveActive(1);
-          break;
-        case "ArrowUp":
-          event.preventDefault();
-          this.moveActive(-1);
-          break;
-        case "Home":
-          event.preventDefault();
-          this.moveTo(this.firstIndex());
-          break;
-        case "End":
-          event.preventDefault();
-          this.moveTo(this.lastIndex());
-          break;
-        case "Escape":
-          event.preventDefault();
-          this.closeMenu({ refocus: true });
-          break;
-        case " ": {
-          const item = data.items[data.activeIndex];
-          if (item && item.kind === "link") {
-            event.preventDefault();
-            this.activate(data.activeIndex, event);
-          }
-          break;
-        }
-        default:
-          break;
-      }
-    },
-    onItemClick: (index, event) => {
-      this.activate(index, event);
-    }
-  };
-};
-DropdownMenu.prototype.render = function() {
-  const __d = this.getData();
-  const __f = this.ctx.formatters.getAll();
-  return new ViewNode("div", { class: __d.rootClass }, [
-    new ViewNode("button", {
-      id: __d.triggerId,
-      "data-dm-trigger": true,
-      type: "button",
-      class: __d.triggerClass,
-      disabled: __d.disabled,
-      "aria-haspopup": "true",
-      "aria-controls": __d.panelId,
-      "aria-expanded": __d.open ? "true" : "false",
-      "@click": (this.__h ??= {})[0] ??= (event) => this.events.toggle(event),
-      "@keydown:down:prevent": (this.__h ??= {})[1] ??= (event) => this.events.onTriggerDown(event),
-      "@keydown:up:prevent": (this.__h ??= {})[2] ??= (event) => this.events.onTriggerUp(event),
-      "@keydown:escape": (this.__h ??= {})[3] ??= (event) => this.events.onTriggerEscape(event)
-    }, [
-      new ViewNode(SLOT_TAG, { name: "trigger" }, [
-        new ViewNode("span", {}, [
-          new ViewNode("text", { value: String(__d.label) })
-        ]),
-        new ViewNode("svg", {
-          class: `size-4 shrink-0 transition-[rotate] ${__d.open ? "rotate-180" : ""}`,
-          viewBox: "0 0 16 16",
-          fill: "currentColor",
-          "aria-hidden": "true"
-        }, [
-          new ViewNode("path", { d: "M4 6l4 4 4-4z" }, [])
-        ])
-      ])
-    ]),
-    ...__d.open ? [
-      new ViewNode(
-        "div",
-        {
-          id: __d.panelId,
-          "aria-labelledby": __d.triggerId,
-          class: `absolute ${__d.align === "end" ? "right-0" : "left-0"} top-full mt-1 min-w-[10rem] rounded-lg border border-border bg-surface p-1 shadow-lg z-50`,
-          "@keydown": (this.__h ??= {})[4] ??= (event) => this.events.onPanelKeydown(event)
-        },
-        __d.items.map(
-          (item, i2) => new ViewNode("div", {
-            key: ViewNode.keyOf(item),
-            class: "contents"
-          }, [
-            ...item.kind === "divider" ? [
-              new ViewNode("div", {
-                class: "my-1 border-t border-border",
-                role: "separator",
-                "aria-hidden": "true"
-              }, [])
-            ] : [
-              ...item.kind === "group" ? [
-                new ViewNode("div", {
-                  class: "px-2.5 pt-2 pb-1 text-xs font-medium text-muted uppercase tracking-wide"
-                }, [
-                  new ViewNode("text", { value: String(item.label) })
-                ])
-              ] : [
-                ...item.kind === "link" ? [
-                  new ViewNode("a", {
-                    href: item.href,
-                    "data-dm-index": i2,
-                    tabindex: __d.activeIndex === i2 ? "0" : "-1",
-                    "aria-disabled": item.disabled ? "true" : false,
-                    class: `block w-full text-left rounded-md px-2.5 py-1.5 text-sm ${item.danger ? "text-danger hover:bg-danger-tint" : "text-body hover:bg-surface-sunken hover:text-ink"} ${item.disabled ? "opacity-50 pointer-events-none" : ""} focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring`,
-                    "@click": (event) => this.events.onItemClick(i2, event)
-                  }, [
-                    new ViewNode("text", { value: String(item.label) })
-                  ])
-                ] : [
-                  new ViewNode("button", {
-                    type: "button",
-                    "data-dm-index": i2,
-                    tabindex: __d.activeIndex === i2 ? "0" : "-1",
-                    disabled: item.disabled,
-                    class: `block w-full text-left rounded-md px-2.5 py-1.5 text-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${item.danger ? "text-danger hover:bg-danger-tint" : "text-body hover:bg-surface-sunken hover:text-ink"} focus-visible:outline-2 focus-visible:outline-offset-2 outline-ring focus-visible:outline-ring`,
-                    "@click": (event) => this.events.onItemClick(i2, event)
-                  }, [
-                    new ViewNode("text", { value: String(item.label) })
-                  ])
-                ]
-              ]
-            ]
-          ])
-        )
-      )
-    ] : [
-      new ViewNode("#")
-    ]
-  ]);
-};
-DropdownMenu.__pzlModule = "app/components/ui/DropdownMenu.pzl";
 
 // app/components/ui/Popconfirm.pzl
 var uid6 = 0;

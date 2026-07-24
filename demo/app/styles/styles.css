@@ -108,6 +108,8 @@
   --color-ring: light-dark(#4c6ef5, #5c7cfa);
 }
 
+@import './schemes.css';
+
 @layer base {
   body {
     -webkit-font-smoothing: antialiased;
@@ -115,4 +117,3 @@
     background: var(--color-page);
   }
 }
-

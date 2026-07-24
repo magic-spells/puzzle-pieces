@@ -42,6 +42,19 @@
         <CodeBlock code={ mechanismSnippet } lang="css"/>
       </section>
 
+      <section id="schemes" class="mt-14 scroll-mt-20">
+        <h2 class="mb-2 text-xl font-semibold tracking-tight text-ink">Schemes</h2>
+        <p class="max-w-2xl text-sm/relaxed text-body">
+          Puzzle Pieces includes four schemes: Default, Claw, Void, and Dim. The variants
+          live in
+          <code class="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[13px] text-ink">registry/theme/*.css</code>
+          as drop-in replacements for
+          <code class="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[13px] text-ink">pieces.css</code>.
+          Every scheme contains both light and dark modes, so the existing theme switcher
+          keeps working unchanged.
+        </p>
+      </section>
+
       <section id="text" class="mt-14 scroll-mt-20">
         <h2 class="mb-2 text-xl font-semibold tracking-tight text-ink">Text & ink</h2>
         <p class="mb-5 max-w-2xl text-sm/relaxed text-body">
@@ -230,6 +243,7 @@ export default class Theming extends PuzzleView {
       usageSnippet,
       toc: [
         { label: 'How it works', href: '#how-it-works' },
+        { label: 'Schemes', href: '#schemes' },
         { label: 'Text & ink', href: '#text' },
         { label: 'Surfaces', href: '#surfaces' },
         { label: 'Brand', href: '#brand' },
