@@ -181,8 +181,6 @@ export const SECTIONS = [
 			description: "Keyboard-key hint rendered in a native <kbd> with a keycap shadow" },
 		{ name: "marquee", title: "Marquee", path: "/components/marquee",
 			description: "Continuously scrolling ticker of slot content — seamless rAF loop with pause-on-hover, drag-to-scroll, direction and speed props, and prefers-reduced-motion respect" },
-		{ name: "masonry", title: "Masonry", path: "/components/masonry",
-			description: "Responsive CSS-columns masonry/gallery grid — slot children flow into a responsive column count with a gap prop" },
 		{ name: "navigation-menu", title: "Navigation Menu", path: "/components/navigation-menu",
 			description: "Horizontal site navigation with hover/click flyout panels of link cards — disclosure-pattern semantics, delayed hover intent, viewport-clamped panels, active-route underline" },
 		{ name: "pagination", title: "Pagination", path: "/components/pagination",
@@ -211,6 +209,15 @@ export const SECTIONS = [
 			description: "Horizontal or vertical grouped controls container with role=toolbar and roving-tabindex arrow-key navigation across buttons, toggles, and separators" },
 		{ name: "tree", title: "Tree", path: "/components/tree",
 			description: "Config-first WAI-ARIA tree view — nested nodes with expand/collapse, roving-tabindex keyboard nav, and a selection callback" },
+		],
+	},
+	{
+		label: "Layouts",
+		items: [
+		{ name: "masonry", title: "Masonry", path: "/components/masonry",
+			description: "Responsive CSS-columns masonry/gallery grid — slot children flow into a responsive column count with a gap prop" },
+		{ name: "split-panel", title: "Split Panel", path: "/components/split-panel",
+			description: "Resizable two-pane layout with horizontal or vertical direction, constraints, snap points, nesting, keyboard controls, and persistence" },
 		],
 	},
 ];

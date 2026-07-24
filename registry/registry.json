@@ -769,6 +769,16 @@
       "targetDir": "app/components/ui"
     },
     {
+      "name": "split-panel",
+      "description": "Resizable two-pane layout with horizontal or vertical direction, constraints, snap points, nesting, keyboard controls, and persistence",
+      "files": [
+        "SplitPanel.pzl"
+      ],
+      "registryDependencies": [],
+      "dependencies": [],
+      "targetDir": "app/components/ui"
+    },
+    {
       "name": "stat-card",
       "description": "KPI tile: label, preformatted value, optional signed delta with sentiment coloring, and an optional trend Sparkline",
       "files": [

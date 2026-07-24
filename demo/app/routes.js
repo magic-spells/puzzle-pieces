@@ -82,6 +82,7 @@ import SliderDoc from './views/components/SliderDoc.pzl';
 import SparklineDoc from './views/components/SparklineDoc.pzl';
 import SpinnerDoc from './views/components/SpinnerDoc.pzl';
 import SplitButtonDoc from './views/components/SplitButtonDoc.pzl';
+import SplitPanelDoc from './views/components/SplitPanelDoc.pzl';
 import StatCardDoc from './views/components/StatCardDoc.pzl';
 import StepperDoc from './views/components/StepperDoc.pzl';
 import SwitchDoc from './views/components/SwitchDoc.pzl';
@@ -672,6 +673,13 @@ export default [
 		view: SplitButtonDoc,
 		layout: DefaultLayout,
 		meta: { title: 'Split Button — Puzzle Pieces' },
+	},
+	{
+		path: '/components/split-panel',
+		name: 'split-panel',
+		view: SplitPanelDoc,
+		layout: DefaultLayout,
+		meta: { title: 'Split Panel — Puzzle Pieces' },
 	},
 	{
 		path: '/components/stat-card',
