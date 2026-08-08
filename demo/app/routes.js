@@ -1,5 +1,4 @@
 import DefaultLayout from './layouts/Default.pzl';
-import AppShell from './layouts/AppShell.pzl';
 import Introduction from './views/Introduction.pzl';
 import ComponentsIndex from './views/ComponentsIndex.pzl';
 import Demos from './views/Demos.pzl';
@@ -19,6 +18,7 @@ import AvatarDoc from './views/components/AvatarDoc.pzl';
 import AvatarGroupDoc from './views/components/AvatarGroupDoc.pzl';
 import BadgeDoc from './views/components/BadgeDoc.pzl';
 import BarChartDoc from './views/components/BarChartDoc.pzl';
+import BottomSheetDoc from './views/components/BottomSheetDoc.pzl';
 import BreadcrumbDoc from './views/components/BreadcrumbDoc.pzl';
 import ButtonDoc from './views/components/ButtonDoc.pzl';
 import ButtonGroupDoc from './views/components/ButtonGroupDoc.pzl';
@@ -45,6 +45,7 @@ import DropzoneDoc from './views/components/DropzoneDoc.pzl';
 import EmojiPickerDoc from './views/components/EmojiPickerDoc.pzl';
 import EmojiPickerSimpleDoc from './views/components/EmojiPickerSimpleDoc.pzl';
 import EmptyDoc from './views/components/EmptyDoc.pzl';
+import FaderDoc from './views/components/FaderDoc.pzl';
 import FieldDoc from './views/components/FieldDoc.pzl';
 import HoverCardDoc from './views/components/HoverCardDoc.pzl';
 import InputGroupDoc from './views/components/InputGroupDoc.pzl';
@@ -146,21 +147,21 @@ export default [
 		path: '/examples/banking',
 		name: 'banking-demo',
 		view: BankingDemo,
-		layout: AppShell,
+		layout: DefaultLayout,
 		meta: { title: 'Banking Dashboard — Puzzle Pieces' },
 	},
 	{
 		path: '/examples/admin',
 		name: 'admin-demo',
 		view: AdminDemo,
-		layout: AppShell,
+		layout: DefaultLayout,
 		meta: { title: 'Admin Dashboard — Puzzle Pieces' },
 	},
 	{
 		path: '/examples/project',
 		name: 'project-demo',
 		view: ProjectDemo,
-		layout: AppShell,
+		layout: DefaultLayout,
 		meta: { title: 'Project Board — Puzzle Pieces' },
 	},
 	{
@@ -232,6 +233,13 @@ export default [
 		view: BarChartDoc,
 		layout: DefaultLayout,
 		meta: { title: 'Bar Chart — Puzzle Pieces' },
+	},
+	{
+		path: '/components/bottom-sheet',
+		name: 'bottom-sheet',
+		view: BottomSheetDoc,
+		layout: DefaultLayout,
+		meta: { title: 'Bottom Sheet — Puzzle Pieces' },
 	},
 	{
 		path: '/components/breadcrumb',
@@ -414,6 +422,13 @@ export default [
 		view: EmptyDoc,
 		layout: DefaultLayout,
 		meta: { title: 'Empty — Puzzle Pieces' },
+	},
+	{
+		path: '/components/fader',
+		name: 'fader',
+		view: FaderDoc,
+		layout: DefaultLayout,
+		meta: { title: 'Fader — Puzzle Pieces' },
 	},
 	{
 		path: '/components/field',

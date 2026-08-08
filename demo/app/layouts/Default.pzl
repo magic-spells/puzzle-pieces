@@ -7,9 +7,9 @@
         Puzzle Pieces
       </a>
       <div class="flex items-center gap-4">
-        <span class="text-xs text-muted">{ pieceCount } pieces · v0.1</span>
+        <SearchDialog/>
+        <span class="hidden text-xs text-muted sm:inline">{ pieceCount } pieces · v0.2</span>
         <DropdownMenu
-          label="Color scheme"
           align="end"
           items={ schemeItems }
           triggerClass="h-auto! rounded-md! border-0! bg-transparent! p-1.5! text-muted! hover:border-transparent! hover:bg-surface-sunken! hover:text-ink! outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -66,7 +66,9 @@
   </div>
 
   <div class="flex w-full px-gutter">
-    <aside class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pr-4 lg:block">
+    <!-- -ml-3 cancels the px-3 the nav links carry for their active pill, so the
+         link text lines up with the header logo instead of the pill's edge. -->
+    <aside class="sticky top-14 -ml-3 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pr-4 lg:block">
       <SideNav path={ path }/>
     </aside>
 
@@ -88,11 +90,12 @@ import Toaster from '../components/ui/Toaster.pzl';
 import Collapsible from '../components/ui/Collapsible.pzl';
 import DropdownMenu from '../components/ui/DropdownMenu.pzl';
 import SideNav from '../components/docs/SideNav.pzl';
+import SearchDialog from '../components/docs/SearchDialog.pzl';
 import { COMPONENTS } from '../docs/nav.js';
 
 const SCHEMES = [
   { label: 'Default', value: 'default' },
-  { label: 'Claw', value: 'claw' },
+  { label: 'Warm', value: 'warm' },
   { label: 'Void', value: 'void' },
   { label: 'Dim', value: 'dim' },
 ];
@@ -124,7 +127,7 @@ export default class DefaultLayout extends PuzzleView {
     const explicitScheme =
       typeof document !== 'undefined' && document.documentElement.dataset.scheme;
     const scheme =
-      explicitScheme === 'claw' || explicitScheme === 'void' || explicitScheme === 'dim'
+      explicitScheme === 'warm' || explicitScheme === 'void' || explicitScheme === 'dim'
         ? explicitScheme
         : 'default';
     return {
@@ -146,7 +149,7 @@ export default class DefaultLayout extends PuzzleView {
     },
     setScheme: (scheme) => {
       const next =
-        scheme === 'claw' || scheme === 'void' || scheme === 'dim' ? scheme : 'default';
+        scheme === 'warm' || scheme === 'void' || scheme === 'dim' ? scheme : 'default';
       if (typeof document !== 'undefined') {
         if (next === 'default') delete document.documentElement.dataset.scheme;
         else document.documentElement.dataset.scheme = next;

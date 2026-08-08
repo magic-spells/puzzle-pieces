@@ -77,6 +77,13 @@ Rules that follow from this:
 - **Dev server:** `cd demo && npm run dev` on **port 3070** (3000 and several other ports
   are taken by sibling projects). Browser-smoke interactive pieces in a FOREGROUNDED tab —
   Puzzle's rAF-based view scheduler stalls re-renders in a hidden/backgrounded tab.
+- **Node tests:** `npm test` at the repo root runs the DOM-free suites in `test/` against
+  `registry/lib/` (currently the sheet motion libs: engine, policy, drag). These are
+  repo-internal — nothing under `test/` or the root `package.json` is ever copied to a
+  consumer. The assertions are ported byte-identical from the source `@magic-spells/sheet`
+  repo and pin exact numbers, not bounds; any edit to `registry/lib/sheet-*.js` requires
+  the suite green, and porting upstream changes means copying their new tests with only
+  the import paths adjusted — never loosening an assertion to make a port fit.
 
 ## Piece conventions
 
@@ -115,6 +122,19 @@ Rules that follow from this:
   color set only under `focus-visible:` flashes from the default on every focus. Set the
   outline COLOR unconditionally (`outline-ring` / `outline-danger`) alongside the
   `focus-visible:outline-2` reveal.
+- **Implicit two-way binding is ON (D147, puzzle ≥ 0.5.0) — pieces must stay handler-owned.**
+  The compiler auto-binds a `value=`/`checked=` on a plain `<input>`/`<textarea>`/`<select>`
+  when the expression is exactly `ident` or `ident.ident` AND the element has no author
+  `@input`/`@change`. Component tags never bind (props are props). Nearly every piece is
+  already suppressed because it carries the `@change` that routes through its callback
+  prop — that is the correct pattern, not legacy, and the handler must never be deleted to
+  "modernize". The trap is a piece whose inner control binds a **prop-derived** key: the
+  synthesized write lands in the piece's LOCAL state and the next `data()` commit reverts
+  it (dev warns `a data() commit reverted the bound key`). Note `@keydown`/`@blur` do NOT
+  suppress — so an edit BUFFER committed on Enter/blur is exactly the shape that silently
+  starts live-binding. Escape with a non-path expression: `value={ String(x) }` plus a
+  one-line comment (see NumberField). Verify with the compiler, never by eye: compile the
+  `.pzl` and grep the output for `__bind(`.
 - **Morph:** overlay pieces expose an opt-in `morph` prop. Morphable roots must not use
   transform positioning, stylesheet `opacity`, a changing dynamic `style={}` binding, or
   `animations.in/out`. Trigger↔panel morph imports `@magic-spells/morph-engine` (declare it
@@ -139,6 +159,23 @@ Rules that follow from this:
   can't be routed to a slot (compile error: "ambiguous"). Make the condition internal —
   either a direct-child wrapper that carries the `slot` attribute with the control flow
   inside it, or branch the entire component call.
+- **Composition markers are capitalized (D134, puzzle 0.4.0).** `<Children/>` receives
+  untagged call-site content, `<Slot/>` is the router outlet, and `<Slot name="x"/>` is a
+  named slot. The `slot="x"` call-site attribute is unchanged. Lowercase
+  `<slot>`/`<children>` are compile errors in every form.
+- **Stock chrome goes in a marker's FALLBACK BODY (D141).** A paired marker's body is
+  fallback content: it renders only when nothing fills that position, and call-site
+  content replaces it entirely. That is how a piece expresses default chrome —
+  `<Slot name="trigger">…stock chrome…</Slot>` — and it is the shape the six trigger
+  pieces (HoverCard, Popover, Popconfirm, DropdownMenu, EmojiPicker, EmojiPickerSimple)
+  use. A fallback body is ordinary template content (interpolations, `{#if}`/`{#for}`,
+  components, `{#svg}`); the one restriction is that a marker may not appear inside
+  another marker's fallback body. Self-closing means no fallback.
+  Consequences for piece APIs: **a filled slot WINS over the label prop** (the label
+  powers the fallback text only), so a custom trigger must carry its own accessible
+  name; and filling the slot is itself the opt-in, so no `customTrigger`-style gating
+  boolean is needed. There is still no is-slot-filled probe. Document the fallback
+  contract in the piece's header comment.
 - **A component's `@event` name must not equal one of its prop names.** `@sort={…}` on a
   component tag compiles to a bare `sort` key in the same props object as a `sort={…}`
   value prop — a duplicate key where the last one silently wins, breaking controlled

@@ -8,9 +8,9 @@
       "description": "Balanced cool neutrals with an indigo accent."
     },
     {
-      "name": "claw",
-      "file": "theme/claw.css",
-      "description": "Anthropic-inspired warm ivory and Claude-chat greys."
+      "name": "warm",
+      "file": "theme/warm.css",
+      "description": "Warm greys and ivory with a clay-orange accent."
     },
     {
       "name": "void",
@@ -118,6 +118,20 @@
         "lib/chart-math.js"
       ],
       "dependencies": [],
+      "targetDir": "app/components/ui"
+    },
+    {
+      "name": "bottom-sheet",
+      "description": "Gesture-driven native-dialog bottom sheet with snap points, velocity-aware spring settling, a dismissal-tracking scrim, pinned header/footer slots, backdrop dragging, inset mode, and controlled open state",
+      "files": [
+        "BottomSheet.pzl"
+      ],
+      "registryDependencies": [
+        "lib/sheet-math.js"
+      ],
+      "dependencies": [
+        "@magic-spells/physics-engine"
+      ],
       "targetDir": "app/components/ui"
     },
     {
@@ -411,6 +425,18 @@
       "targetDir": "app/components/ui"
     },
     {
+      "name": "fader",
+      "description": "Full-width fill slider — a flat, dial-style parameter control with an inline label, right-aligned value readout, interior ticks, and a bar handle",
+      "files": [
+        "Fader.pzl"
+      ],
+      "registryDependencies": [
+        "lib/slider-math.js"
+      ],
+      "dependencies": [],
+      "targetDir": "app/components/ui"
+    },
+    {
       "name": "field",
       "description": "Labeled text input with hint/error helper text, danger invalid state, and full ARIA wiring",
       "files": [
@@ -454,7 +480,8 @@
       "name": "kanban",
       "description": "Config-first controlled Kanban board — horizontal columns of draggable cards with pointer drag-and-drop, an insertion-placeholder indicator, full keyboard move (pick up, arrow-move between/within columns, drop), aria-live announcements, and a value-first @move intent the parent applies",
       "files": [
-        "Kanban.pzl"
+        "Kanban.pzl",
+        "KanbanCard.pzl"
       ],
       "registryDependencies": [],
       "dependencies": [],
@@ -534,7 +561,7 @@
     },
     {
       "name": "multi-select",
-      "description": "A filterable tag / multi-value combobox: picks show as removable chips, typing filters the rest",
+      "description": "A filterable tag / multi-value combobox: picks show as removable chips, typing filters the rest.",
       "files": [
         "MultiSelect.pzl"
       ],
@@ -720,12 +747,20 @@
     },
     {
       "name": "sheet",
-      "description": "Bottom sheet with drag-to-dismiss physics; becomes a centered modal on wide viewports",
+      "description": "One component that is a snap-point bottom sheet on phones and morphs — live, in place, while open — into a side drawer or centered dialog past the breakpoint, with spring-physics snaps, an optional container-transform flight out of the trigger that opened it, entrance and exit effects, a dismiss policy, and parent-controlled open state",
       "files": [
         "Sheet.pzl"
       ],
-      "registryDependencies": [],
-      "dependencies": [],
+      "registryDependencies": [
+        "lib/sheet-engine.js",
+        "lib/sheet-policy.js",
+        "lib/sheet-drag.js"
+      ],
+      "dependencies": [
+        "@magic-spells/physics-engine",
+        "@magic-spells/frame-engine",
+        "@magic-spells/morph-engine"
+      ],
       "targetDir": "app/components/ui"
     },
     {
@@ -750,11 +785,13 @@
     },
     {
       "name": "slider",
-      "description": "Touch-friendly single-value or dual-thumb range slider with gesture arming, keyboard support, and optional form inputs",
+      "description": "Touch-friendly single-value or dual-thumb range slider with gesture arming, keyboard support, tick marks and labels, and optional form inputs",
       "files": [
         "Slider.pzl"
       ],
-      "registryDependencies": [],
+      "registryDependencies": [
+        "lib/slider-math.js"
+      ],
       "dependencies": [],
       "targetDir": "app/components/ui"
     },
